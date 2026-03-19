@@ -1,0 +1,526 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangChain v1.2.x Quick Reference}
+\subtitle{Condensed Cheat Sheet • March 2026}
+\author{}
+\date{}
+
+\begin{document}
+
+% SLIDE 1: Title
+\begin{frame}
+  \titlepage
+  \vspace{-1cm}
+  \begin{center}
+    {\small \textcolor{docgray}{A quick-lookup reference for the 20 most essential LangChain patterns}}
+  \end{center}
+\end{frame}
+
+% SLIDE 2: Essential Imports
+\begin{frame}[fragile]
+  \frametitle{Essential Imports (Top 20)}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Models \& Chat}
+    \begin{lstlisting}
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_google_vertexai import ChatVertexAI
+from langchain_ollama import ChatOllama
+    \end{lstlisting}
+
+    \textbf{Prompts}
+    \begin{lstlisting}
+from langchain_core.prompts import (
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+  PromptTemplate
+)
+    \end{lstlisting}
+
+    \column{0.5\textwidth}
+    \textbf{Chains \& Tools}
+    \begin{lstlisting}
+from langchain_core.tools import tool
+from langchain.agents import (
+  create_react_agent,
+  AgentExecutor
+)
+    \end{lstlisting}
+
+    \textbf{RAG \& Memory}
+    \begin{lstlisting}
+from langchain_text_splitters import (
+  RecursiveCharacterTextSplitter
+)
+from langchain_core.runnables import (
+  RunnableWithMessageHistory,
+  RunnablePassthrough
+)
+from langchain_chroma import Chroma
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+% SLIDE 3: More Imports
+\begin{frame}[fragile]
+  \frametitle{Essential Imports (Continued)}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Outputs \& Parsing}
+    \begin{lstlisting}
+from langchain_core.output_parsers import (
+  JsonOutputParser,
+  StrOutputParser,
+  PydanticOutputParser
+)
+from langchain.callbacks.tracers.langchain import (
+  LangChainTracer
+)
+    \end{lstlisting}
+
+    \column{0.5\textwidth}
+    \textbf{LangGraph}
+    \begin{lstlisting}
+from langgraph.graph import StateGraph
+from langgraph.prebuilt import (
+  create_react_agent
+)
+    \end{lstlisting}
+
+    \textbf{Documents \& Loaders}
+    \begin{lstlisting}
+from langchain_community.document_loaders import (
+  PyPDFLoader,
+  WebBaseLoader,
+  CSVLoader
+)
+from langchain_core.documents import Document
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+% SLIDE 4: Chat Models
+\begin{frame}[fragile]
+  \frametitle{Chat Models — Quick Init}
+
+  \begin{lstlisting}
+# OpenAI
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key="...")
+
+# Anthropic
+from langchain_anthropic import ChatAnthropic
+llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", temperature=0)
+
+# Google VertexAI
+from langchain_google_vertexai import ChatVertexAI
+llm = ChatVertexAI(model="gemini-2.0-flash", temperature=0)
+
+# Ollama (Local)
+from langchain_ollama import ChatOllama
+llm = ChatOllama(model="llama2", base_url="http://localhost:11434")
+
+# Universal invoke pattern
+response = llm.invoke("Your prompt here")
+result = llm.batch(["prompt1", "prompt2"])  # Parallel
+async_result = await llm.ainvoke("prompt")   # Async
+  \end{lstlisting}
+
+  \docref{langchain-ai/langchain}
+\end{frame}
+
+% SLIDE 5: Prompt Templates
+\begin{frame}[fragile]
+  \frametitle{Prompt Templates — 3 Patterns}
+
+  \begin{lstlisting}
+# 1. Simple string template
+from langchain_core.prompts import PromptTemplate
+prompt = PromptTemplate.from_template("Explain {topic}")
+prompt.invoke({"topic": "neural nets"})
+
+# 2. Chat format (preferred for models)
+from langchain_core.prompts import ChatPromptTemplate
+chat_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a {role}"),
+    ("human", "{question}"),
+    MessagesPlaceholder(variable_name="history")
+])
+
+# 3. from_template shortcut
+chat_prompt = ChatPromptTemplate.from_template(
+    "System: {system}\nUser: {user}"
+)
+  \end{lstlisting}
+
+  \textbf{Key:} Use \texttt{ChatPromptTemplate} for chat models, nest \texttt{MessagesPlaceholder} for history.
+
+  \docref{Prompts}
+\end{frame}
+
+% SLIDE 6: LCEL Chains
+\begin{frame}[fragile]
+  \frametitle{LCEL Patterns (The 5 Most Common)}
+
+  \begin{lstlisting}
+# 1. Basic chain: prompt -> llm -> parser
+chain = prompt | llm | StrOutputParser()
+result = chain.invoke({"key": "value"})
+
+# 2. Parallel branches (map)
+from langchain_core.runnables import RunnableParallel
+parallel = RunnableParallel(
+    analysis=prompt | llm,
+    summary=other_prompt | llm
+)
+
+# 3. Passthrough (preserve input)
+from langchain_core.runnables import RunnablePassthrough
+chain = ({"doc": RunnablePassthrough()} | llm)
+
+# 4. Branching (conditional)
+chain = condition | (true_branch | llm) or (false_branch | llm)
+
+# 5. With fallbacks
+chain = (prompt | llm).with_fallbacks([fallback_chain])
+  \end{lstlisting}
+
+  \docref{LCEL}
+\end{frame}
+
+% SLIDE 7: Tools & Agents
+\begin{frame}[fragile]
+  \frametitle{Tools \& Agents — Minimal}
+
+  \begin{lstlisting}
+# Define tool with decorator
+from langchain_core.tools import tool
+
+@tool
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers."""
+    return a * b
+
+# Bind tools to model
+from langchain_core.tools import bind_tools
+model_with_tools = llm.bind_tools([multiply])
+
+# Create agent
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain import hub
+prompt = hub.pull("hwchase17/react")
+agent = create_react_agent(llm, [multiply], prompt)
+executor = AgentExecutor(agent=agent, tools=[multiply])
+
+result = executor.invoke({"input": "What is 5 times 3?"})
+  \end{lstlisting}
+
+  \docref{Agents}
+\end{frame}
+
+% SLIDE 8: RAG Pipeline
+\begin{frame}[fragile]
+  \frametitle{RAG Pipeline — Complete Minimal Setup}
+
+  \begin{lstlisting}
+# 1. Load documents
+from langchain_community.document_loaders import WebBaseLoader
+loader = WebBaseLoader("https://example.com")
+docs = loader.load()
+
+# 2. Split
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000)
+splits = splitter.split_documents(docs)
+
+# 3. Embed & store
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(splits, embeddings)
+
+# 4. Retrieve & generate
+retriever = vectorstore.as_retriever()
+chain = {"context": retriever, "question": RunnablePassthrough()} \
+    | prompt | llm | StrOutputParser()
+answer = chain.invoke("What does the site say about X?")
+  \end{lstlisting}
+
+  \docref{RAG}
+\end{frame}
+
+% SLIDE 9: Memory & History
+\begin{frame}[fragile]
+  \frametitle{Memory Patterns}
+
+  \begin{lstlisting}
+# 1. RunnableWithMessageHistory (stateful chains)
+from langchain_core.runnables.history import (
+  RunnableWithMessageHistory
+)
+chain = RunnableWithMessageHistory(
+    runnable=llm,
+    get_session_history=get_session_history,
+    input_messages_key="input",
+    history_messages_key="history"
+)
+# Invoke with session_id
+result = chain.invoke(
+    {"input": "Hi!"},
+    config={"configurable": {"session_id": "user123"}}
+)
+
+# 2. trim_messages (summarize old context)
+from langchain_core.messages import trim_messages
+trimmer = trim_messages(
+    max_tokens=1000,
+    strategy="last"
+)
+
+# 3. Store in any backend (Redis, PostgreSQL, etc.)
+  \end{lstlisting}
+
+  \docref{Memory}
+\end{frame}
+
+% SLIDE 10: LangGraph Essentials
+\begin{frame}[fragile]
+  \frametitle{LangGraph — State Machines}
+
+  \begin{lstlisting}
+from langgraph.graph import StateGraph
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    messages: list
+    counter: int
+
+# Build graph
+graph = StateGraph(AgentState)
+
+# Add nodes (functions)
+def node_1(state):
+    return {"messages": state["messages"] + ["step1"], "counter": 1}
+
+def node_2(state):
+    return {"messages": state["messages"] + ["step2"]}
+
+graph.add_node("node1", node_1)
+graph.add_node("node2", node_2)
+
+# Add edges
+graph.add_edge("node1", "node2")
+graph.set_entry_point("node1")
+graph.set_finish_point("node2")
+
+# Compile & run
+app = graph.compile()
+result = app.invoke({"messages": [], "counter": 0})
+  \end{lstlisting}
+
+  \docref{LangGraph}
+\end{frame}
+
+% SLIDE 11: Streaming & Callbacks
+\begin{frame}[fragile]
+  \frametitle{Streaming \& Callbacks}
+
+  \begin{lstlisting}
+# Stream tokens
+for chunk in llm.stream("Hello"):
+    print(chunk.content, end="", flush=True)
+
+# Async streaming
+async for chunk in await llm.astream("Prompt"):
+    print(chunk.content)
+
+# Stream with events
+from langchain_core.callbacks import LangChainTracer
+from langsmith import Client
+client = Client()
+tracer = LangChainTracer(project_name="my_project")
+
+result = chain.invoke(
+    {"input": "..."},
+    config={"callbacks": [tracer]}
+)
+
+# View in LangSmith
+# https://smith.langchain.com -> projects -> my_project
+
+# Custom callback
+from langchain_core.callbacks import BaseCallbackHandler
+class MyCallback(BaseCallbackHandler):
+    def on_llm_end(self, response, **kwargs):
+        print(f"LLM finished: {response}")
+  \end{lstlisting}
+
+  \docref{Callbacks, LangSmith}
+\end{frame}
+
+% SLIDE 12: Troubleshooting Checklist
+\begin{frame}
+  \frametitle{Top 10 Errors \& Fixes}
+
+  \begin{enumerate}
+    \item[\textbf{ImportError}] → Wrong module. Use \texttt{langchain\_openai}, not \texttt{langchain.llms}
+    \item[\textbf{API Key missing}] → Set env var: \texttt{export OPENAI\_API\_KEY=...} or pass to constructor
+    \item[\textbf{Chain invoke fails}] → Input dict keys must match prompt placeholders
+    \item[\textbf{LLM returns None}] → Check \texttt{temperature}, \texttt{max\_tokens}, provider limits
+    \item[\textbf{Parser error}] → Output format != parser expectation. Test LLM output directly.
+    \item[\textbf{Tool binding fails}] → Tools must be List[BaseTool]. Use \texttt{@tool} decorator.
+    \item[\textbf{Retriever returns empty}] → Vectorstore empty or wrong embedding model
+    \item[\textbf{Memory not persisting}] → Check \texttt{session\_id} in config, backend connectivity
+    \item[\textbf{LCEL pipe syntax error}] → Ensure left side outputs right side's expected input type
+    \item[\textbf{LangGraph StateError}] → State keys must match TypedDict definition exactly
+  \end{enumerate}
+
+  \vspace{0.5cm}
+  \textbf{Pro tip:} Always test components individually before chaining them.
+\end{frame}
+
+% SLIDE 13: Decision Matrix
+\begin{frame}
+  \frametitle{Decision Matrix: What to Use When}
+
+  \begin{center}
+    \small
+    \begin{tabular}{l|c|c|c|c}
+      \toprule
+      \textbf{Scenario} & \textbf{Chain} & \textbf{Agent} & \textbf{LangGraph} & \textbf{Deep Agent} \\
+      \midrule
+      Fixed workflow & X & & & \\
+      Dynamic tool use & & X & X & \\
+      Multi-step reasoning & & X & X & X \\
+      Parallel tasks & X & & X & X \\
+      Complex state mgmt & & & X & X \\
+      Human-in-loop & & & X & X \\
+      Real-time streaming & X & X & X & \\
+      Simple API call & X & & & \\
+      RAG retrieval & X & X & X & \\
+      Agentic loops & & X & X & X \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+
+  \vspace{0.5cm}
+  \begin{tipbox}[Rule of Thumb]
+    \small Start with \textbf{Chain}, add \textbf{Agent} for tool use, use \textbf{LangGraph} for fine-grained control.
+  \end{tipbox}
+\end{frame}
+
+% SLIDE 14: Performance Tips
+\begin{frame}
+  \frametitle{Performance \& Best Practices}
+
+  \begin{conceptbox}[Optimization]
+    \begin{itemize}
+      \item Use \texttt{.batch()} for parallel inference (faster than loop)
+      \item Stream tokens with \texttt{.stream()} for UX (no waiting for full response)
+      \item Cache embeddings—don't re-embed the same docs
+      \item Use cheaper models for routing/filtering, expensive for final answer
+      \item Set \texttt{temperature=0} for deterministic outputs (summaries, extraction)
+      \item Chunk size 500–1500 tokens is sweet spot (not too small, not too large)
+    \end{itemize}
+  \end{conceptbox}
+
+  \begin{warningbox}[Common Pitfalls]
+    \begin{itemize}
+      \item Don't reinitialize embeddings for each query (slow, inconsistent)
+      \item Don't use retriever without persistence check (data loss)
+      \item Don't forget to add error handling in agent loops (infinite loops)
+    \end{itemize}
+  \end{warningbox}
+\end{frame}
+
+% SLIDE 15: Resources & Next Steps
+\begin{frame}
+  \frametitle{Resources \& Next Steps}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Official Docs}
+    \begin{itemize}
+      \item \url{https://python.langchain.com}
+      \item LangGraph: \url{https://langchain-ai.github.io/langgraph}
+      \item LangSmith: \url{https://smith.langchain.com}
+    \end{itemize}
+
+    \textbf{Key Concepts}
+    \begin{itemize}
+      \item LCEL (Runnable chains)
+      \item Output parsers
+      \item Tool schemas
+      \item State graphs
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Common Extensions}
+    \begin{itemize}
+      \item \texttt{langchain-openai}
+      \item \texttt{langchain-anthropic}
+      \item \texttt{langchain-community}
+      \item \texttt{langgraph}
+    \end{itemize}
+
+    \textbf{Next: Deep Dive Into}
+    \begin{itemize}
+      \item Fine-tuning with function calling
+      \item Multi-agent coordination
+      \item Custom memory backends
+      \item Production deployment
+    \end{itemize}
+  \end{columns}
+
+  \vspace{1cm}
+  \begin{center}
+    {\large \textcolor{lcblue}{\textbf{This is a quick reference—bookmark it!}}}
+  \end{center}
+\end{frame}
+
+\end{document}

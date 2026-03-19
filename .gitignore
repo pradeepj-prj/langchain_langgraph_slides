@@ -1,0 +1,16 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+
+# macOS
+.DS_Store
+
+# Agent intermediate files
+13_Putting_It_All_Together/presentation.*
+13_Putting_It_All_Together/rag_chatbot.*
+13_Putting_It_All_Together/BUILD_SUMMARY.txt

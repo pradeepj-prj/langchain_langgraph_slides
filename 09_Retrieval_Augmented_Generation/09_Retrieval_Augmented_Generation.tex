@@ -1,0 +1,893 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title[LangChain RAG]{Section 09: Retrieval-Augmented Generation (RAG)}
+\author{LangChain Framework Guide}
+\date{March 2026 --- LangChain v1.2.x}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Agenda}
+  \begin{itemize}
+    \item RAG Mental Model: Giving LLMs access to your data
+    \item RAG Fundamentals: Definition, motivation, pipeline
+    \item Building RAG with LCEL: Complete working examples
+    \item Advanced RAG Techniques: Multi-query, conversational, citations
+    \item Evaluation and Production: Measuring quality, deployment checklist
+    \item Best Practices: Common pitfalls, RAG vs fine-tuning
+  \end{itemize}
+  \vspace{1cm}
+  \textcolor{lcblue}{Goal: Master practical RAG implementation from basics to production.}
+\end{frame}
+
+\begin{frame}{Mental Model: RAG = Access to Your Data}
+  \begin{conceptbox}[Core Insight]
+    RAG gives LLMs access to external knowledge without retraining.
+    Think: ``LLM + Search + Context Injection''
+  \end{conceptbox}
+  \vspace{0.5cm}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Without RAG:}
+    \begin{itemize}
+      \item LLM knowledge frozen at training time
+      \item Cannot answer questions about proprietary data
+      \item Must fine-tune to add new knowledge
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{With RAG:}
+    \begin{itemize}
+      \item Query retrieves relevant documents at runtime
+      \item Context injected into prompt
+      \item LLM answers based on retrieved docs
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{What is RAG? Definition and Motivation}
+  \textbf{\textcolor{lcblue}{Retrieval-Augmented Generation (RAG):}}
+  A technique combining information retrieval with generative AI to produce answers grounded in external documents.
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Key Advantages:}
+    \begin{itemize}
+      \item No retraining needed
+      \item Handles proprietary data
+      \item Reduces hallucination
+      \item Transparent sources
+      \item Easy to update knowledge
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Why RAG Over Fine-tuning:}
+    \begin{itemize}
+      \item No GPU training required
+      \item Knowledge stays current
+      \item Can cite sources
+      \item Works with large datasets
+      \item Lower cost and faster deployment
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The RAG Pipeline: Three Steps}
+  \begin{itemize}
+    \item[\textbf{1. Index}] Split documents into chunks, embed, store in vector DB
+    \item[\textbf{2. Retrieve}] Find K most relevant chunks for query
+    \item[\textbf{3. Generate}] Pass query with context to LLM, get answer
+  \end{itemize}
+  \vspace{0.8cm}
+
+  \begin{center}
+    Documents $\rightarrow$ Chunks $\rightarrow$ Embeddings $\rightarrow$ Vector DB
+    \vspace{0.4cm}
+
+    Query $\rightarrow$ Top-K Retrieval $\rightarrow$ LLM $\rightarrow$ Answer
+  \end{center}
+
+  \docref{docs.smith.langchain.com/rag}
+\end{frame}
+
+\begin{frame}[fragile]{Building a Basic RAG Chain (LCEL)}
+  \fontsize{7}{8}\selectfont
+  \texttt{
+  from langchain.text\_splitter import RecursiveCharacterTextSplitter \\
+  from langchain\_openai import OpenAIEmbeddings, ChatOpenAI \\
+  from langchain\_community.vectorstores import Chroma \\
+  from langchain.chains import create\_retrieval\_chain \\
+  \\
+  documents = load\_documents("./docs") \\
+  splitter = RecursiveCharacterTextSplitter(chunk\_size=1000) \\
+  chunks = splitter.split\_documents(documents) \\
+  \\
+  embeddings = OpenAIEmbeddings() \\
+  vector\_db = Chroma.from\_documents(chunks, embeddings) \\
+  retriever = vector\_db.as\_retriever(k=3) \\
+  \\
+  llm = ChatOpenAI(model="gpt-4") \\
+  rag\_chain = create\_retrieval\_chain(retriever, doc\_chain) \\
+  result = rag\_chain.invoke(\{"input": "What is RAG?"\}) \\
+  }
+  \normalsize
+  \vspace{0.3cm}
+  \docref{LangChain LCEL docs}
+\end{frame}
+
+\begin{frame}{The RAG Prompt: Formatting Context}
+  \begin{tipbox}[Best Practice]
+    Tell the LLM explicitly to use context and cite sources.
+  \end{tipbox}
+
+  \textbf{Good RAG Prompt Template:}
+  \begin{itemize}
+    \item Clear instruction to use context
+    \item Role/expertise framing
+    \item Clear separation: context, query, answer
+    \item Fallback behavior for missing context
+  \end{itemize}
+
+  \textbf{Example Prompt:}
+  ``You are an expert assistant. Answer based ONLY on the provided context. If context doesn't contain the answer, say 'Not in context.' Context: \{context\} Question: \{input\} Answer:''
+\end{frame}
+
+\begin{frame}{create\_stuff\_documents\_chain}
+  \begin{conceptbox}[Stuff Strategy]
+    Combine all retrieved docs into one prompt. Good for small/medium contexts.
+  \end{conceptbox}
+
+  \textbf{How it works:}
+  \begin{enumerate}
+    \item Retriever returns K documents
+    \item All documents passed as single context block
+    \item LLM generates response based on context
+    \item Simple, effective, and fast
+  \end{enumerate}
+
+  \textbf{Advantages:}
+  \begin{itemize}
+    \item Minimal latency
+    \item Good for most use cases
+    \item Easy to implement
+  \end{itemize}
+
+  \textbf{Limitations:}
+  \begin{itemize}
+    \item Context window can fill quickly with large docs
+    \item No ranking or compression of results
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{create\_retrieval\_chain: Full RAG}
+  \textbf{Combines retriever + document chain into single pipeline.}
+
+  \fontsize{7}{8}\selectfont
+  \texttt{
+  from langchain.chains import create\_retrieval\_chain \\
+  from langchain\_openai import OpenAIEmbeddings \\
+  \\
+  embeddings = OpenAIEmbeddings() \\
+  db = FAISS.load\_local("vector\_db", embeddings) \\
+  retriever = db.as\_retriever(k=4) \\
+  llm = ChatOpenAI() \\
+  \\
+  rag\_chain = create\_retrieval\_chain(retriever, doc\_chain) \\
+  \\
+  result = rag\_chain.invoke(\{"input": "How does RAG work?"\}) \\
+  print(result["answer"]) \\
+  print(result["context"])
+  }
+  \normalsize
+\end{frame}
+
+\begin{frame}{Conversational RAG: Adding Chat History}
+  \begin{warningbox}[Challenge]
+    Standard RAG treats each query independently. Need to reformulate queries using conversation history.
+  \end{warningbox}
+
+  \textbf{Problem Example:}
+  \begin{enumerate}
+    \item User: ``Tell me about RAG''
+    \item User: ``What about fine-tuning?''
+    \item Without context, system retrieves about fine-tuning in general
+    \item With context, system retrieves about fine-tuning vs RAG
+  \end{enumerate}
+
+  \begin{tipbox}[Solution]
+    Use \texttt{create\_history\_aware\_retriever} to reformulate queries with chat history.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}{Multi-Query RAG: Multiple Perspectives}
+  \begin{conceptbox}[Intuition]
+    One query formulation may miss relevant docs. Generate multiple query variations for better recall.
+  \end{conceptbox}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Standard Query:}
+    \begin{itemize}
+      \item Single embedding
+      \item May miss synonyms
+      \item Limited perspective
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Multi-Query:}
+    \begin{itemize}
+      \item Generate 3-5 query variants
+      \item Retrieve from each
+      \item Combine and deduplicate
+      \item Better coverage
+    \end{itemize}
+  \end{columns}
+
+  \textbf{Example Variants for ``How do I build RAG?'':}
+  \begin{itemize}
+    \item ``Steps to implement retrieval-augmented generation''
+    \item ``RAG architecture and setup guide''
+    \item ``Creating a RAG system from scratch''
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RAG with Sources: Returning Retrieved Docs}
+  \begin{tipbox}[Transparency]
+    Include source documents in response so users can verify answers.
+  \end{tipbox}
+
+  \textbf{Output Structure:}
+  \begin{itemize}
+    \item Answer: ``RAG is a technique that...''
+    \item Context/Sources:
+    \begin{itemize}
+      \item docs/rag\_intro.pdf page 2
+      \item docs/langchain\_guide.md section 5
+      \item docs/tutorials.html
+    \end{itemize}
+  \end{itemize}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Users can verify answers
+    \item Build trust in system
+    \item Easy debugging
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RAG with Citations: Making LLM Cite Passages}
+  \begin{conceptbox}[Goal]
+    Have LLM cite specific passages from retrieved documents.
+  \end{conceptbox}
+
+  \textbf{Citation Prompt Instruction:}
+  \begin{itemize}
+    \item ``Include [Citation: source\_name, passage] when citing''
+    \item ``For each claim, provide the source document''
+    \item ``Format as [Source: filename, section X]''
+  \end{itemize}
+
+  \textbf{Example Output:}
+  \begin{itemize}
+    \item ``RAG is [Citation: langchain\_docs, section 2.1] a technique that combines retrieval with generation.''
+  \end{itemize}
+
+  \textbf{Advantages:}
+  \begin{itemize}
+    \item Verifiable answers
+    \item Transparent reasoning
+    \item Reduced hallucination
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Contextual Compression: Filter for Relevance}
+  \begin{warningbox}[Problem]
+    Retrieved chunks may contain irrelevant sections, wasting context window and confusing LLM.
+  \end{warningbox}
+
+  \begin{conceptbox}[Solution]
+    Use LLM or embedding-based filter to keep only relevant passages.
+  \end{conceptbox}
+
+  \textbf{Approaches:}
+  \begin{enumerate}
+    \item LLM-based: Use LLM to score and filter documents
+    \item Embedding-based: Compute similarity to query
+    \item Keyword matching: Keep paragraphs with query terms
+  \end{enumerate}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Fit more documents in context window
+    \item Reduce LLM confusion
+    \item Lower token usage and costs
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Parent Document Retriever: Chunk vs. Context}
+  \begin{conceptbox}[Idea]
+    Index small chunks for fine-grained retrieval, but return larger parent docs for context.
+  \end{conceptbox}
+
+  \textbf{Problem Solved:}
+  \begin{itemize}
+    \item Small chunks: precise retrieval, no context
+    \item Large chunks: good context, bad precision
+    \item Solution: retrieve by chunk, return full section
+  \end{itemize}
+
+  \textbf{Configuration:}
+  \begin{itemize}
+    \item Child splitter: 100-500 tokens (search units)
+    \item Parent splitter: 1500-2000 tokens (return units)
+  \end{itemize}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Best of both worlds
+    \item Better context for LLM
+    \item Improved answer quality
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RAG Evaluation: Measuring Quality}
+  \begin{tipbox}[Metrics Matter]
+    Evaluate RAG across multiple dimensions for production readiness.
+  \end{tipbox}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Retrieval Quality:}
+    \begin{itemize}
+      \item Recall: Found all relevant docs?
+      \item Precision: Were docs relevant?
+      \item MRR: Rank of first match?
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Generation Quality:}
+    \begin{itemize}
+      \item BLEU/ROUGE: Text similarity
+      \item Faithfulness: Grounded in context?
+      \item Relevance: Matches query?
+    \end{itemize}
+  \end{columns}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Overall:}
+    \begin{itemize}
+      \item Hallucination rate
+      \item Answer correctness
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Cost/Speed:}
+    \begin{itemize}
+      \item Latency (E2E)
+      \item Tokens per query
+      \item Dollar cost per query
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{RAG Fusion and Re-ranking Strategies}
+  \begin{conceptbox}[Beyond Simple Retrieval]
+    Combine multiple retrieval strategies and intelligently rank results.
+  \end{conceptbox}
+
+  \textbf{RAG Fusion:}
+  \begin{itemize}
+    \item Generate multiple queries
+    \item Retrieve from each
+    \item Reciprocal Rank Fusion (RRF) to combine
+    \item Deduplicate and reorder
+  \end{itemize}
+
+  \textbf{Re-ranking Strategies:}
+  \begin{itemize}
+    \item LLM-based: Use LLM to score docs
+    \item Cross-encoder: Specialized ranking model
+    \item Diversity: Cover different aspects
+    \item Semantic: Re-rank by relevance
+  \end{itemize}
+
+  \docref{langchain.retrievers}
+\end{frame}
+
+\begin{frame}{Streaming RAG Responses}
+  \begin{tipbox}[User Experience]
+    Stream LLM response token-by-token for faster perceived latency.
+  \end{tipbox}
+
+  \textbf{How Streaming Works:}
+  \begin{enumerate}
+    \item Retrieval happens upfront (not streamed)
+    \item Only LLM generation is streamed
+    \item Sources returned separately
+    \item Improve perceived responsiveness
+  \end{enumerate}
+
+  \textbf{Considerations:}
+  \begin{itemize}
+    \item Latency still includes retrieval time
+    \item Frontend must handle streaming
+    \item Good for long responses
+  \end{itemize}
+
+  \begin{warningbox}[Limitation]
+    Cannot stream documents; must retrieve first, then stream answer.
+  \end{warningbox}
+\end{frame}
+
+\begin{frame}{Common RAG Pitfalls}
+  \begin{warningbox}[Pitfall 1: Poor Chunking]
+    Chunks too large lose specificity, too small lack context. Fix: 500-1500 tokens, 10-20 percent overlap.
+  \end{warningbox}
+
+  \begin{warningbox}[Pitfall 2: Stale Vector DB]
+    Documents change but embeddings not updated. Fix: Re-index regularly, use delta updates.
+  \end{warningbox}
+
+  \begin{warningbox}[Pitfall 3: Hallucination Despite Context]
+    LLM ignores context or makes up facts. Fix: Grounding prompts, lower temperature.
+  \end{warningbox}
+
+  \begin{warningbox}[Pitfall 4: Retrieval Failures]
+    Query phrased differently from docs. Fix: Multi-query, hybrid search, query expansion.
+  \end{warningbox}
+\end{frame}
+
+\begin{frame}{RAG vs Fine-tuning: Comparison}
+  \begin{center}
+    \small
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \textbf{Dimension} & \textbf{RAG} & \textbf{Fine-tune} \\
+      \hline
+      Training & No & Yes (GPU) \\
+      Knowledge Update & Easy & Expensive \\
+      Latency & Higher & Lower \\
+      Citations & Easy & Hard \\
+      Hallucination & Reduced & Possible \\
+      Capacity & Large & Limited \\
+      Deploy Cost & Lower & Higher \\
+      Privacy & External DB & Model weights \\
+      \hline
+    \end{tabular}
+  \end{center}
+
+  \begin{tipbox}[When to Use RAG]
+    Frequently updated knowledge, need citations, large datasets.
+  \end{tipbox}
+
+  \begin{tipbox}[When to Use Fine-tuning]
+    Task-specific behavior, latency-critical, small datasets.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}{Production RAG Checklist}
+  \begin{conceptbox}[Before Launch]
+    Ensure robust, measurable, and maintainable system.
+  \end{conceptbox}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Data and Indexing:}
+    \begin{itemize}
+      \item Documents loaded and versioned
+      \item Chunking strategy tested
+      \item Vector DB production-ready
+      \item Embeddings model chosen
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Evaluation and Testing:}
+    \begin{itemize}
+      \item Human eval on sample set
+      \item Automated metrics (RAGAS)
+      \item A/B testing framework
+      \item Baseline established
+    \end{itemize}
+  \end{columns}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Operations:}
+    \begin{itemize}
+      \item Caching strategy
+      \item Rate limiting
+      \item Error handling
+      \item Logging and audit trail
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Monitoring:}
+    \begin{itemize}
+      \item Latency tracked
+      \item Token costs logged
+      \item Hallucination detection
+      \item User feedback loop
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Advanced RAG: Adaptive Routing}
+  \begin{conceptbox}[Routing Based on Query]
+    Use router to decide: retrieve or answer directly? Which retriever?
+  \end{conceptbox}
+
+  \textbf{Routing Strategies:}
+  \begin{itemize}
+    \item Query classification: Does it need RAG?
+    \item Retriever selection: Keyword vs semantic vs hybrid
+    \item Document source routing: Which DB?
+    \item Confidence-based: Use fallback if uncertain
+  \end{itemize}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Reduced latency for simple queries
+    \item Better results for complex queries
+    \item Cost optimization
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Caching in RAG: Speed and Cost}
+  \begin{tipbox}[Opportunities]
+    Cache at multiple levels: embeddings, retrievals, responses.
+  \end{tipbox}
+
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Query Caching:}
+    \begin{itemize}
+      \item Cache exact same queries
+      \item FIFO or LRU cache
+      \item Limited by diversity
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Semantic Caching:}
+    \begin{itemize}
+      \item Cache by query intent
+      \item Return similar answers
+      \item More flexible
+    \end{itemize}
+  \end{columns}
+
+  \textbf{Implementation:}
+  \begin{itemize}
+    \item In-memory cache for development
+    \item Redis for production
+    \item LangChain built-in support
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Hybrid Search: Keyword plus Semantic}
+  \begin{conceptbox}[Best of Both Worlds]
+    Combine exact keyword matching with semantic similarity.
+  \end{conceptbox}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Keyword Search:}
+    \begin{itemize}
+      \item BM25, TF-IDF, Lucene
+      \item Exact term matching
+      \item Good for names/acronyms
+      \item Fast, no embeddings
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Semantic Search:}
+    \begin{itemize}
+      \item Vector embeddings
+      \item Synonym understanding
+      \item Good for concepts
+      \item Slower, requires embeddings
+    \end{itemize}
+  \end{columns}
+
+  \textbf{Approach:}
+  \begin{itemize}
+    \item Retrieve from both
+    \item Rank and deduplicate
+    \item Return combined results
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Metadata Filtering in RAG}
+  \begin{tipbox}[Pre-filtering]
+    Use metadata to restrict retrieval before semantic search.
+  \end{tipbox}
+
+  \textbf{Common Metadata:}
+  \begin{itemize}
+    \item Date: Only 2025 onward
+    \item Source: Official docs only
+    \item Category: API reference only
+    \item Language: English only
+    \item Author: Peer-reviewed sources
+  \end{itemize}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Filter irrelevant results early
+    \item Reduce context noise
+    \item Improve answer quality
+    \item Lower costs
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Chain of Thought RAG}
+  \begin{conceptbox}[Idea]
+    Combine multi-step reasoning with iterative retrieval.
+  \end{conceptbox}
+
+  \textbf{Pattern:}
+  \begin{enumerate}
+    \item LLM breaks complex question into sub-questions
+    \item Retrieve context for each sub-question
+    \item Combine answers into final response
+  \end{enumerate}
+
+  \textbf{Example:}
+  \begin{itemize}
+    \item Q: ``Compare RAG and fine-tuning for proprietary documents''
+    \item Sub-Q1: ``What is RAG?''
+    \item Sub-Q2: ``What is fine-tuning?''
+    \item Sub-Q3: ``Advantages/disadvantages of each?''
+  \end{itemize}
+
+  \textbf{Benefit:} Better answers to complex, multi-faceted questions
+\end{frame}
+
+\begin{frame}{Dynamic Context Window Management}
+  \begin{warningbox}[Challenge]
+    Limited context window. Too much: LLM confused. Too little: quality suffers.
+  \end{warningbox}
+
+  \textbf{Strategies:}
+  \begin{itemize}
+    \item Adaptive K: Increase K if low confidence
+    \item Token Budget: Reserve tokens for response
+    \item Truncation: Summarize long docs
+    \item Hierarchical: Summaries then full docs
+  \end{itemize}
+
+  \textbf{Implementation:}
+  \begin{itemize}
+    \item Monitor token usage
+    \item Adjust K based on quality
+    \item Track latency impact
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Testing and Debugging RAG}
+  \textbf{Testing Strategy:}
+  \begin{itemize}
+    \item Unit tests: Chunking, embeddings, indexing
+    \item Integration tests: Retrieval accuracy, prompt formatting
+    \item E2E tests: Full pipeline, known Q\&A pairs
+    \item Regression tests: Catch improvements and regressions
+  \end{itemize}
+
+  \textbf{Debugging Checklist:}
+  \begin{itemize}
+    \item Poor answers: Check retrieved docs, prompt, LLM
+    \item Slow queries: Profile retrieval vs LLM time
+    \item Out of memory: Reduce docs, chunk size
+    \item Hallucinations: Improve prompts, lower temperature
+  \end{itemize}
+
+  \textbf{Tools:}
+  \begin{itemize}
+    \item LangSmith for tracing
+    \item RAGAS for metrics
+    \item Custom evaluation datasets
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RAG Security: PII and Sensitive Data}
+  \begin{warningbox}[Risk]
+    RAG can expose PII if documents contain sensitive information.
+  \end{warningbox}
+
+  \textbf{Mitigation Strategies:}
+  \begin{itemize}
+    \item PII Redaction: Remove/mask emails, SSNs before indexing
+    \item Access Control: Only authorized users see certain docs
+    \item Query Filtering: Restrict sensitive field retrieval
+    \item Output Filtering: Post-process LLM output
+  \end{itemize}
+
+  \textbf{Best Practices:}
+  \begin{itemize}
+    \item Audit documents before indexing
+    \item Use metadata filtering
+    \item Monitor for data leakage
+    \item Test with sensitive queries
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RAG Cost Optimization}
+  \begin{tipbox}[Budget-Conscious Approaches]
+    Reduce embedding, LLM, and DB costs.
+  \end{tipbox}
+
+  \textbf{Optimization Strategies:}
+  \begin{enumerate}
+    \item Smaller Models: Cheaper embeddings, smaller LLMs
+    \item Batch Processing: Index once, reuse embeddings
+    \item Reduce K: Start with 3 instead of 10
+    \item Caching: Cache embeddings and responses
+    \item Compression: Summarize docs to fit more
+    \item Approximate Search: HNSW, IVF vs exact
+  \end{enumerate}
+
+  \textbf{Typical Costs:}
+  \begin{itemize}
+    \item RAG query: dollars 0.001--dollars 0.01
+    \item Depends on model, context size, vector DB
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Knowledge Graph plus RAG}
+  \begin{conceptbox}[Hybrid Approach]
+    Combine semantic search with structured knowledge graphs.
+  \end{conceptbox}
+
+  \textbf{Pattern:}
+  \begin{itemize}
+    \item Extract entities and relationships from docs
+    \item Build knowledge graph (Neo4j, RDF)
+    \item Query graph for structured context
+    \item Pass graph plus retrieved docs to LLM
+  \end{itemize}
+
+  \textbf{Benefits:}
+  \begin{itemize}
+    \item Better reasoning on relationships
+    \item More precise, entity-based retrieval
+    \item Combines semantic plus structured search
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Multi-Modal RAG: Images plus Text}
+  \begin{conceptbox}[Beyond Text]
+    Extend RAG to images, videos, audio.
+  \end{conceptbox}
+
+  \textbf{Challenges:}
+  \begin{itemize}
+    \item No standard multi-modal embeddings yet
+    \item Slower inference, larger models
+    \item Complex indexing (text plus images)
+  \end{itemize}
+
+  \textbf{Approaches:}
+  \begin{itemize}
+    \item Vision-Language Models: CLIP, LLaVA
+    \item Hybrid Indexing: Store image embeddings and descriptions
+    \item Image-to-Text: Captions then standard RAG
+  \end{itemize}
+
+  \textit{Emerging area with use case-dependent solutions.}
+\end{frame}
+
+\begin{frame}{RAG Cheat Sheet: Quick Reference}
+  \textbf{Basic RAG in 3 lines:}
+  \begin{itemize}
+    \item \texttt{retriever = db.as\_retriever(k=3)}
+    \item \texttt{rag\_chain = create\_retrieval\_chain(retriever, doc\_chain)}
+    \item \texttt{result = rag\_chain.invoke(\{``input'': question\})}
+  \end{itemize}
+
+  \textbf{Key Components:}
+  \begin{itemize}
+    \item Retriever: vector DB, keyword, multi-query
+    \item Doc Chain: stuff, map-reduce, refine
+    \item Full Chain: retrieval, history-aware
+  \end{itemize}
+
+  \textbf{Production Considerations:}
+  \begin{itemize}
+    \item Evaluate with RAGAS
+    \item Monitor with LangSmith
+    \item Cache aggressively
+    \item Test thoroughly
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Self-Check Questions}
+  \begin{enumerate}
+    \item What is RAG and how does it differ from fine-tuning?
+    \item Explain the three steps of a RAG pipeline.
+    \item How does multi-query retrieval improve recall?
+    \item What is contextual compression and why use it?
+    \item How do you add chat history to RAG?
+    \item Name three RAG evaluation metrics.
+    \item What are common RAG pitfalls and fixes?
+    \item How can you reduce RAG costs?
+  \end{enumerate}
+
+  \vspace{0.5cm}
+  \textcolor{lcorange}{\textbf{Hint:}} Review slides on basics (frames 4-5), LCEL (frames 6-9), and evaluation (frame 18).
+\end{frame}
+
+\begin{frame}{Summary and Next Steps}
+  \begin{conceptbox}[Key Takeaway]
+    RAG is the practical way to give LLMs access to your data without retraining.
+  \end{conceptbox}
+
+  \textbf{What You've Learned:}
+  \begin{itemize}
+    \item RAG fundamentals and mental model
+    \item Building RAG chains with LCEL
+    \item Advanced techniques: multi-query, compression, citations
+    \item Evaluation and production best practices
+    \item Common pitfalls and optimization strategies
+  \end{itemize}
+
+  \textbf{Next Steps:}
+  \begin{enumerate}
+    \item Build a simple RAG pipeline with your documents
+    \item Evaluate using RAGAS or custom metrics
+    \item Iterate on retrieval (chunk size, K, retriever)
+    \item Deploy with monitoring and caching
+    \item Collect feedback and improve continuously
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Resources and Further Reading}
+  \textbf{Official LangChain Docs:}
+  \begin{itemize}
+    \item \url{https://docs.smith.langchain.com/rag}
+    \item \url{https://docs.smith.langchain.com/rag-from-scratch}
+    \item \url{https://api.python.langchain.com}
+  \end{itemize}
+
+  \textbf{Evaluation and Tracing:}
+  \begin{itemize}
+    \item RAGAS: \url{https://github.com/explodinggradients/ragas}
+    \item LangSmith: \url{https://docs.smith.langchain.com}
+  \end{itemize}
+
+  \textbf{Research:}
+  \begin{itemize}
+    \item Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks (Lewis et al., 2020)
+    \item In-Context Retrieval-Augmented Language Models (Shi et al., 2023)
+  \end{itemize}
+\end{frame}
+
+\end{document}

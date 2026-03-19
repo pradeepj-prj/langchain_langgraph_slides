@@ -1,0 +1,1241 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 11: LangGraph Fundamentals}
+\subtitle{Graph-Based Orchestration for Stateful Agents}
+\author{LangChain v1.2.x}
+\date{March 2026}
+
+\begin{document}
+
+% ============================================================================
+% SLIDE 1: Title Slide
+% ============================================================================
+\frame{\titlepage}
+
+% ============================================================================
+% SLIDE 2: Section Overview
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{What We'll Cover}
+\begin{itemize}
+  \item Mental model: LangGraph as a graph-based orchestration framework
+  \item LangGraph vs LangChain: relationships and use cases
+  \item Core concepts: StateGraph, nodes, edges, START/END
+  \item Building stateful, looping agents with cycles
+  \item Checkpointing and persistence for resilience
+  \item Human-in-the-loop interrupts and resumption
+  \item Streaming, subgraphs, and dynamic graphs
+  \item Patterns, debugging, common pitfalls
+\end{itemize}
+\vspace{10pt}
+\textbf{Goal:} Master graph-based orchestration for complex agent workflows.
+\end{frame}
+
+% ============================================================================
+% SLIDE 3: Mental Model
+% ============================================================================
+\begin{frame}
+\frametitle{Mental Model: LangGraph as Graph Orchestration}
+\begin{itemize}
+  \item \textbf{LangGraph:} A graph-based framework for orchestrating multi-step agent workflows
+  \item Nodes = functions that read/write \textit{state}
+  \item Edges = transitions between nodes (conditional or fixed)
+  \item \textbf{State:} Shared data structure (TypedDict) passed through the graph
+  \item Graph \textit{runs} in discrete steps: execute a node, update state, route to next node
+  \item \textbf{Stateful:} Unlike chains, graphs maintain and evolve state throughout execution
+  \item \textbf{Looping:} Supports cycles, enabling iterative reasoning and refinement
+\end{itemize}
+\vspace{10pt}
+\begin{center}
+  \textit{Agents as Graphs: think in terms of state transitions, not function composition}
+\end{center}
+\end{frame}
+
+% ============================================================================
+% SLIDE 4: Why LangGraph? Problems It Solves
+% ============================================================================
+\begin{frame}
+\frametitle{Why LangGraph? Problems It Solves}
+\begin{itemize}
+  \item \textbf{Cycles \& Loops:} Chains are DAGs (acyclic). Agents need feedback loops for reflection, retries, iteration.
+  \item \textbf{Explicit State:} Chains pass one output as next input. LangGraph manages rich, multi-field state.
+  \item \textbf{Conditional Routing:} Complex branching logic needs explicit graph structure, not nested if/else.
+  \item \textbf{Persistence \& Recovery:} Checkpointing state at each step enables interrupts, resumption, and audit trails.
+  \item \textbf{Human-in-the-Loop:} Pause execution at specific nodes, let humans review/modify, resume seamlessly.
+  \item \textbf{Composability:} Subgraphs enable modular agent designs.
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 5: LangGraph vs LangChain
+% ============================================================================
+\begin{frame}
+\frametitle{LangGraph vs LangChain}
+\vspace{10pt}
+\small
+\begin{tabular}{l|c|c}
+\toprule
+\textbf{Feature} & \textbf{LangChain} & \textbf{LangGraph} \\
+\midrule
+Structure & DAG (Acyclic Chain) & General Graph (with cycles) \\
+State Management & Linear pass-through & Explicit TypedDict \\
+Loops & Not directly supported & First-class citizen \\
+Conditional Routes & Limited & Full branching/conditions \\
+Checkpointing & Basic & Rich, fine-grained \\
+Human Interrupts & No & Yes (interrupt\_before, interrupt\_after) \\
+Ideal For & Simple pipelines & Complex agents, multi-step workflows \\
+\bottomrule
+\end{tabular}
+
+\vspace{15pt}
+\textit{LangChain for chains; LangGraph for agents.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 6: Core Concept - StateGraph
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Core Concept: StateGraph}
+\begin{itemize}
+  \item \textbf{StateGraph:} A class that builds a graph with explicit state
+  \item State is defined as a \texttt{TypedDict} (modern Python 3.8+)
+  \item StateGraph constructor takes the state class
+  \item You add nodes, edges, and configure entrypoint
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph
+
+class AgentState(TypedDict):
+    input: str
+    output: str
+    messages: list
+
+graph = StateGraph(AgentState)
+# Add nodes, edges, compile...
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Key:} State is the communication medium between nodes.
+\end{frame}
+
+% ============================================================================
+% SLIDE 7: Nodes - Reading and Writing State
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Nodes: Functions That Read and Write State}
+\begin{itemize}
+  \item \textbf{Node:} A Python function that receives state, performs work, returns updated state
+  \item Signature: \texttt{def node\_name(state: StateType) -> dict}
+  \item \textbf{Return value:} A dict with keys to update in state (merged, not replaced)
+  \item Nodes can call LLMs, tools, compute, or any Python code
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+def process_node(state: AgentState) -> dict:
+    """A node that processes the input."""
+    result = state["input"].upper()  # Read state
+    return {"output": result}  # Write state (merged)
+
+# Add node to graph
+graph.add_node("process", process_node)
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{Nodes are the "verbs" of your agent graph.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 8: Edges - Connecting Nodes
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Edges: Connecting Nodes}
+\begin{itemize}
+  \item \textbf{Edge:} A transition from one node to another
+  \item \textbf{Normal edge:} \texttt{add\_edge(source, target)} — always routes from source to target
+  \item \textbf{Conditional edge:} \texttt{add\_conditional\_edges(source, routing\_func, mapping)}
+  \item Routing function receives state, returns next node name
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+# Normal edge: always go from "node_a" to "node_b"
+graph.add_edge("node_a", "node_b")
+
+# Conditional edge: routing function decides next node
+def route(state: AgentState) -> str:
+    if state["output"] == "DONE":
+        return "end"
+    return "loop"
+
+graph.add_conditional_edges("process", route,
+    {"end": END, "loop": "process"})
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 9: START and END Special Nodes
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{START and END: Special Nodes}
+\begin{itemize}
+  \item \textbf{START:} Virtual node representing graph entry point
+  \item \textbf{END:} Virtual node representing graph exit
+  \item Import: \texttt{from langgraph.graph import START, END}
+  \item Always have at least one edge from START and one to END
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+from langgraph.graph import START, END
+
+# Route from START to first node
+graph.add_edge(START, "input_node")
+
+# Route to END when done
+graph.add_edge("final_node", END)
+\end{lstlisting}
+
+\vspace{15pt}
+\begin{tipbox}[Graph Structure]
+Every graph must have a clear entry point (START) and exit (END).
+\end{tipbox}
+\end{frame}
+
+% ============================================================================
+% SLIDE 10: Building Your First Graph - Simple Chatbot
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Building Your First Graph: Simple Chatbot}
+\begin{lstlisting}
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+
+class ChatState(TypedDict):
+    user_input: str
+    response: str
+
+def chat_node(state: ChatState) -> dict:
+    """Simple echo chatbot."""
+    response = f"You said: {state['user_input']}"
+    return {"response": response}
+
+graph = StateGraph(ChatState)
+graph.add_node("chat", chat_node)
+graph.add_edge(START, "chat")
+graph.add_edge("chat", END)
+
+compiled = graph.compile()
+result = compiled.invoke({"user_input": "Hello"})
+print(result["response"])  # "You said: Hello"
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 11: State Management - How State Flows
+% ============================================================================
+\begin{frame}
+\frametitle{State Management: How State Flows Through the Graph}
+\begin{itemize}
+  \item State is initialized when you call \texttt{invoke(initial\_state)} or \texttt{stream(initial\_state)}
+  \item Each node receives the current state (all fields)
+  \item Node returns a dict with updates; these are \textbf{merged} into state
+  \item Merging: all keys in state persist unless overwritten
+  \item After node completes, routing logic executes (conditional edges)
+  \item Graph continues until it reaches END
+\end{itemize}
+
+\vspace{15pt}
+\begin{conceptbox}[State as Shared Memory]
+State is not replaced between nodes—it's accumulated. Each node updates only the fields it needs to.
+\end{conceptbox}
+\end{frame}
+
+% ============================================================================
+% SLIDE 12: Conditional Routing with add_conditional_edges
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Conditional Routing: add\_conditional\_edges}
+\begin{lstlisting}
+def routing_decision(state: ChatState) -> str:
+    """Decide next node based on state."""
+    if "error" in state.get("response", "").lower():
+        return "retry"
+    return "end"
+
+graph.add_conditional_edges(
+    "process_node",
+    routing_decision,
+    {
+        "retry": "process_node",    # Loop back
+        "end": END                   # Exit
+    }
+)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Key points:}
+\begin{itemize}
+  \item Routing function receives state, returns string (next node name)
+  \item Mapping dict maps return value to actual node/END
+  \item Enables loops, retries, branching based on runtime conditions
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 13: TikZ Diagram - Multi-Step Agent Graph
+% ============================================================================
+\begin{frame}
+\frametitle{TikZ Diagram: Multi-Step Agent Graph with Branching}
+\begin{center}
+\begin{tikzpicture}[
+  node distance=2.5cm,
+  every node/.style={draw, rounded rectangle, minimum width=2.2cm, minimum height=0.8cm, font=\small},
+  >=Stealth
+]
+
+% Nodes
+\node (start) [fill=lcgreen!70, text=white] {START};
+\node (input) [below=of start, fill=lcblue!70, text=white] {Input Node};
+\node (think) [below=of input, fill=lcblue!70, text=white] {Think};
+\node (decide) [below=of think, fill=lcorange!70, text=white] {Decide};
+\node (act) [below left=1.5cm and 1.5cm of decide, fill=lcblue!70, text=white] {Act};
+\node (refine) [below right=1.5cm and 1.5cm of decide, fill=lcblue!70, text=white] {Refine};
+\node (end) [below right=2cm and 0.5cm of act, fill=lcred!70, text=white] {END};
+
+% Edges
+\draw [->, thick] (start) -- (input);
+\draw [->, thick] (input) -- (think);
+\draw [->, thick] (think) -- (decide);
+\draw [->, thick] (decide) -- (act) node [midway, left, font=\tiny] {if action};
+\draw [->, thick] (decide) -- (refine) node [midway, right, font=\tiny] {if refine};
+\draw [->, thick] (act) -- (end);
+\draw [->, thick] (refine) -- (end);
+\draw [<->, thick, dashed] (think) edge[bend left=40] (act);
+
+\end{tikzpicture}
+\end{center}
+
+\small
+Feedback loop: Act can loop back to Think for multi-step reasoning.
+\end{frame}
+
+% ============================================================================
+% SLIDE 14: Cycles in Graphs - Enabling Loops
+% ============================================================================
+\begin{frame}
+\frametitle{Cycles in Graphs: How LangGraph Enables Loops}
+\begin{itemize}
+  \item \textbf{LangChain chains:} DAGs (directed acyclic graphs) — no loops allowed
+  \item \textbf{LangGraph:} Allows cycles — nodes can route back to earlier nodes
+  \item \textbf{Loops enable:}
+    \begin{itemize}
+      \item Iterative reasoning: "think -> act -> observe -> think again"
+      \item ReAct pattern: think, act, reflect, repeat
+      \item Error recovery: try -> fail -> retry
+      \item Refinement: generate -> evaluate -> improve
+    \end{itemize}
+  \item Cycles are \textit{explicit} — no hidden magic, you control when to loop
+\end{itemize}
+
+\vspace{15pt}
+\begin{warningbox}[Infinite Loops]
+Always ensure your routing logic has an exit condition, or set a max recursion depth.
+\end{warningbox}
+\end{frame}
+
+% ============================================================================
+% SLIDE 15: Checkpointing - MemorySaver
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Checkpointing: Saving and Restoring Graph State}
+\begin{itemize}
+  \item \textbf{Checkpointing:} Saving state after each node executes
+  \item \textbf{MemorySaver:} In-memory checkpoint storage (for development)
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+from langgraph.checkpoint.memory import MemorySaver
+
+# Create checkpointer
+checkpointer = MemorySaver()
+
+# Compile with checkpointer
+compiled = graph.compile(checkpointer=checkpointer)
+
+# Invoke with thread_id to enable checkpointing
+result = compiled.invoke(
+    {"user_input": "Hello"},
+    config={"configurable": {"thread_id": "abc123"}}
+)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Benefits:}
+\begin{itemize}
+  \item Resume execution from last checkpoint
+  \item Inspect state at any step
+  \item Implement human-in-the-loop workflows
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 16: Persistence Backends - SQLite and PostgreSQL
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Persistence Backends: SQLite and PostgreSQL}
+\begin{lstlisting}
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+# SQLite persistence
+checkpointer = SqliteSaver(conn="langraph_db.sqlite")
+compiled = graph.compile(checkpointer=checkpointer)
+\end{lstlisting}
+
+\vspace{10pt}
+\begin{lstlisting}
+from langgraph.checkpoint.postgres import PostgresSaver
+
+# PostgreSQL persistence
+checkpointer = PostgresSaver(
+    conn_string="postgresql://user:pw@localhost:5432/db"
+)
+compiled = graph.compile(checkpointer=checkpointer)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Key points:}
+\begin{itemize}
+  \item SQLite: Good for single-machine, development
+  \item PostgreSQL: For distributed, production systems
+  \item Config: Always use \texttt{config=\{"configurable": \{"thread\_id": id\}\}}
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 17: Human-in-the-Loop - Interrupts
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Human-in-the-Loop: interrupt\_before and interrupt\_after}
+\begin{lstlisting}
+# Pause BEFORE executing a node
+compiled = graph.compile(
+    checkpointer=checkpointer,
+    interrupt_before=["approval_node"]
+)
+
+# Pause AFTER executing a node
+compiled = graph.compile(
+    checkpointer=checkpointer,
+    interrupt_after=["llm_call_node"]
+)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Workflow:}
+\begin{enumerate}
+  \item Call \texttt{invoke()} or \texttt{stream()} — execution pauses at interrupt point
+  \item Check state: \texttt{compiled.get\_state(config)}
+  \item Inspect results, let human decide
+  \item Optionally modify state
+  \item Resume: \texttt{compiled.invoke(None, config)}
+\end{enumerate}
+
+\vspace{10pt}
+Perfect for approval workflows, manual reviews, user feedback loops.
+\end{frame}
+
+% ============================================================================
+% SLIDE 18: Resuming After Interrupts
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Resuming After Interrupts}
+\begin{lstlisting}
+# First execution - pauses at "approval"
+config = {"configurable": {"thread_id": "user_session"}}
+compiled.invoke({"task": "process"}, config)
+
+# Inspect state at interrupt point
+state = compiled.get_state(config)
+print(f"Pending input: {state.values}")
+
+# Modify state if needed
+updated_state = {
+    "task": "process",
+    "approved": True,
+    "notes": "Looks good"
+}
+
+# Resume execution
+result = compiled.invoke(updated_state, config)
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{State persists; execution picks up where it left off.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 19: Streaming Graph Execution
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Streaming Graph Execution: stream() and astream\_events()}
+\begin{itemize}
+  \item \texttt{invoke()}: Returns final state only
+  \item \texttt{stream()}: Yields state after each node (useful for long operations)
+  \item \texttt{astream\_events()}: Async stream of intermediate events (for real-time updates)
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+# Stream states after each node
+for snapshot in compiled.stream({"input": "..."}, config):
+    node_name, node_state = snapshot
+    print(f"Node '{node_name}' completed")
+    print(f"State: {node_state}")
+
+# Async streaming
+async for event in compiled.astream_events(input, config):
+    print(f"Event type: {event['event']}, data: {event['data']}")
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 20: Subgraphs - Composing Graphs
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Subgraphs: Composing Graphs Within Graphs}
+\begin{itemize}
+  \item \textbf{Subgraph:} A compiled graph used as a node in another graph
+  \item Enables modular, reusable agent components
+  \item Subgraph state must align with parent state (or use adapters)
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+# Define a sub-graph
+sub_graph = StateGraph(AgentState).compile()
+
+# Use it as a node in parent graph
+parent_graph = StateGraph(AgentState)
+parent_graph.add_node("subprocess", sub_graph)
+parent_graph.add_edge(START, "subprocess")
+parent_graph.add_edge("subprocess", END)
+
+compiled = parent_graph.compile()
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Use cases:} Breaking complex agents into reusable modules, orchestrating teams of sub-agents.
+\end{frame}
+
+% ============================================================================
+% SLIDE 21: Dynamic Graph Modification at Runtime
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Dynamic Graph Modification at Runtime}
+\begin{itemize}
+  \item \textbf{Note:} LangGraph graphs are typically compiled once
+  \item For true dynamic routing, use conditional\_edges with complex logic
+  \item \texttt{dspy}, \texttt{guidance}, or similar tools can modify prompts dynamically
+  \item Avoid rebuilding the entire graph on each invocation
+\end{itemize}
+
+\vspace{10pt}
+\begin{tipbox}[Design for Flexibility]
+Use rich state and conditional edges to handle dynamic logic, rather than rebuilding graphs.
+\end{tipbox}
+
+\vspace{10pt}
+\begin{lstlisting}
+# Conditional edges enable dynamic routing
+def dynamic_router(state: AgentState) -> str:
+    # Complex logic to decide next node
+    if state.get("needs_tool_call"):
+        return "tool_call_node"
+    return "llm_node"
+
+graph.add_conditional_edges("think", dynamic_router, {...})
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 22: Map-Reduce Patterns in LangGraph
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Map-Reduce Patterns in LangGraph}
+\begin{itemize}
+  \item \textbf{Map:} Process multiple items in parallel (e.g., analyze documents)
+  \item \textbf{Reduce:} Aggregate results (e.g., summarize)
+  \item LangGraph supports concurrent node execution via state + conditional edges
+\end{itemize}
+
+\vspace{10pt}
+\begin{lstlisting}
+# State tracks batches
+class BatchState(TypedDict):
+    items: list
+    results: list
+
+def process_batch(state: BatchState) -> dict:
+    """Process items (could use ThreadPoolExecutor)."""
+    results = [process(item) for item in state["items"]]
+    return {"results": results}
+
+def aggregate(state: BatchState) -> dict:
+    """Reduce: combine results."""
+    final = sum(r["value"] for r in state["results"])
+    return {"final_result": final}
+\end{lstlisting}
+
+\textit{Useful for parallel processing, batch analytics, multi-document workflows.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 23: Error Handling and Retry in Graph Nodes
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Error Handling and Retry in Graph Nodes}
+\begin{lstlisting}
+import tenacity
+
+@tenacity.retry(
+    stop=tenacity.stop_after_attempt(3),
+    wait=tenacity.wait_exponential(multiplier=1, min=2, max=10)
+)
+def flaky_node(state: AgentState) -> dict:
+    """Node with automatic retry."""
+    # This will retry up to 3 times on failure
+    result = call_unstable_service(state["input"])
+    return {"output": result}
+
+# For more control, catch errors in conditional edge
+def error_handler(state: AgentState) -> str:
+    if "error" in state:
+        return "retry"
+    return "success"
+
+graph.add_conditional_edges("call_api", error_handler, {...})
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{Combine retries with conditional routing for robust workflows.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 24: Debugging LangGraph - Visualization
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Debugging LangGraph: Visualizing the Graph}
+\begin{lstlisting}
+# Draw graph as ASCII or Mermaid
+print(compiled.get_graph().draw_ascii())
+
+# Or get as Mermaid diagram for visual tools
+mermaid_str = compiled.get_graph().to_mermaid()
+print(mermaid_str)
+
+# Inspect nodes and edges
+graph_obj = compiled.get_graph()
+print("Nodes:", graph_obj.nodes)
+print("Edges:", graph_obj.edges)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Debugging techniques:}
+\begin{itemize}
+  \item Use \texttt{stream()} to watch state evolution
+  \item Add print statements in nodes
+  \item Use \texttt{get\_state()} to inspect at interrupts
+  \item Check \texttt{get\_graph().draw\_ascii()} for structure validation
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 25: Debugging - Tracing and Introspection
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Debugging: Tracing and Introspection}
+\begin{lstlisting}
+# Trace execution with debug config
+config = {
+    "configurable": {"thread_id": "debug_1"},
+    "debug": True
+}
+
+# Stream with debug info
+for step in compiled.stream(initial_state, config):
+    print(f"Step: {step}")
+
+# Get full state history (with checkpointer)
+# Retrieve all checkpoints for a thread
+states = compiled.get_state_history(config)
+for state_snapshot in states:
+    print(f"Checkpoint: {state_snapshot.checkpoint}")
+    print(f"Values: {state_snapshot.values}")
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{Checkpointing gives you full audit trail of state evolution.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 26: Common Pattern - ReAct Agent as a Graph
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pattern: ReAct Agent as a Graph}
+\textbf{ReAct:} Reasoning + Acting in a loop
+
+\vspace{10pt}
+\begin{lstlisting}
+class ReActState(TypedDict):
+    question: str
+    thoughts: str
+    action: str
+    observation: str
+    answer: str
+
+def think_node(state: ReActState) -> dict:
+    thoughts = llm.invoke(f"Think about: {state['question']}")
+    return {"thoughts": thoughts}
+
+def act_node(state: ReActState) -> dict:
+    action = llm.invoke(f"Given: {state['thoughts']}, what action?")
+    obs = tools.invoke(action)
+    return {"action": action, "observation": obs}
+
+def should_continue(state: ReActState) -> str:
+    if "ANSWER:" in state["observation"]:
+        return "end"
+    return "think"
+\end{lstlisting}
+
+Graph: START -> think -> act -> (loop back to think or END based on observation)
+\end{frame}
+
+% ============================================================================
+% SLIDE 27: Common Pattern - Multi-Agent Collaboration
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pattern: Multi-Agent Collaboration}
+\begin{lstlisting}
+class CollabState(TypedDict):
+    topic: str
+    agent_a_response: str
+    agent_b_response: str
+    final_answer: str
+
+def agent_a(state: CollabState) -> dict:
+    resp = agent_a_llm.invoke(state["topic"])
+    return {"agent_a_response": resp}
+
+def agent_b(state: CollabState) -> dict:
+    resp = agent_b_llm.invoke(state["topic"])
+    return {"agent_b_response": resp}
+
+def synthesize(state: CollabState) -> dict:
+    combined = combine(state["agent_a_response"],
+                       state["agent_b_response"])
+    return {"final_answer": combined}
+
+# Graph: START -> agent_a & agent_b (parallel) -> synthesize -> END
+\end{lstlisting}
+
+\textit{Use subgraphs or parallel execution for multi-agent workflows.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 28: Performance Considerations
+% ============================================================================
+\begin{frame}
+\frametitle{Performance Considerations}
+\begin{itemize}
+  \item \textbf{State size:} Keep state lean; avoid storing large objects (use references)
+  \item \textbf{Checkpoint overhead:} Checkpointing after each node has cost; use in-memory for dev, persistent for prod
+  \item \textbf{Streaming vs invoke:} Streaming is better for long runs; invoke waits for completion
+  \item \textbf{Parallel nodes:} LangGraph doesn't parallelize by default; use Python \texttt{concurrent.futures} in nodes
+  \item \textbf{Async:} Use async versions (\texttt{ainvoke}, \texttt{astream\_events}) for I/O-heavy nodes
+  \item \textbf{Recursion depth:} Monitor cycles to prevent runaway loops; set max iterations if needed
+\end{itemize}
+
+\vspace{15pt}
+\begin{tipbox}[Optimization]
+Profile your graph with \texttt{stream()} and measure checkpoint latency in production.
+\end{tipbox}
+\end{frame}
+
+% ============================================================================
+% SLIDE 29: Common Pitfall 1 - State Mutation
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pitfall 1: State Mutation}
+\textbf{Pitfall:} Modifying state dict in-place leads to unexpected behavior.
+
+\vspace{10pt}
+\begin{lstlisting}
+# WRONG - mutates state in place
+def bad_node(state: AgentState) -> dict:
+    state["messages"].append("new message")  # Mutates!
+    return {}  # Returns nothing, but state changed!
+
+# CORRECT - returns new dict
+def good_node(state: AgentState) -> dict:
+    new_messages = state["messages"] + ["new message"]
+    return {"messages": new_messages}
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Rule:} Always return a dict with fields to update; don't mutate the input state.
+\end{frame}
+
+% ============================================================================
+% SLIDE 30: Common Pitfall 2 - Missing Edges
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pitfall 2: Missing Edges or Unreachable Nodes}
+\textbf{Pitfall:} A node has no outgoing edge, causing execution to hang.
+
+\vspace{10pt}
+\begin{lstlisting}
+# WRONG - "process" node has no outgoing edge
+graph.add_node("process", process_fn)
+graph.add_edge(START, "process")
+# Missing: graph.add_edge("process", END)
+
+# CORRECT - ensure all nodes have edges
+graph.add_edge("process", END)
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Checklist:}
+\begin{itemize}
+  \item START has at least one outgoing edge
+  \item Every non-END node has at least one outgoing edge
+  \item Every node is reachable from START
+  \item Conditional edges cover all routing function outputs
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 31: Common Pitfall 3 - Infinite Loops
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pitfall 3: Infinite Loops}
+\textbf{Pitfall:} Routing logic never reaches END.
+
+\vspace{10pt}
+\begin{lstlisting}
+# WRONG - always routes back to self
+def bad_route(state: AgentState) -> str:
+    return "loop_node"  # Never exits!
+
+# CORRECT - has exit condition
+def good_route(state: AgentState) -> str:
+    iterations = state.get("iteration", 0)
+    if iterations >= 3:
+        return "end"
+    return "loop_node"
+
+graph.add_conditional_edges("loop_node", good_route, {
+    "loop_node": "loop_node",
+    "end": END
+})
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Prevention:} Add counters, check for convergence, set max recursion limits.
+\end{frame}
+
+% ============================================================================
+% SLIDE 32: Common Pitfall 4 - State Type Mismatches
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Common Pitfall 4: State Type Mismatches}
+\textbf{Pitfall:} Nodes return types not matching TypedDict schema.
+
+\vspace{10pt}
+\begin{lstlisting}
+class MyState(TypedDict):
+    count: int
+    items: list
+
+# WRONG - returns wrong type
+def bad_node(state: MyState) -> dict:
+    return {"count": "five"}  # Should be int!
+
+# CORRECT - return correct types
+def good_node(state: MyState) -> dict:
+    return {"count": state["count"] + 1}
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{Tip:} Use strict type checking or mypy to catch these errors early.
+\end{frame}
+
+% ============================================================================
+% SLIDE 33: Cheat Sheet - Creating a Graph
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Cheat Sheet: Creating a Graph (1/2)}
+\begin{lstlisting}
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
+
+# 1. Define state
+class AgentState(TypedDict):
+    user_input: str
+    output: str
+
+# 2. Define nodes
+def process_node(state: AgentState) -> dict:
+    return {"output": state["user_input"].upper()}
+
+# 3. Create graph
+graph = StateGraph(AgentState)
+
+# 4. Add nodes
+graph.add_node("process", process_node)
+
+# 5. Add edges
+graph.add_edge(START, "process")
+graph.add_edge("process", END)
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 34: Cheat Sheet - Compiling and Invoking
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Cheat Sheet: Compiling and Invoking (2/2)}
+\begin{lstlisting}
+# 6. Compile
+compiled = graph.compile(checkpointer=MemorySaver())
+
+# 7. Invoke
+result = compiled.invoke(
+    {"user_input": "hello"},
+    config={"configurable": {"thread_id": "1"}}
+)
+print(result["output"])
+
+# 8. Stream (see intermediate steps)
+for snapshot in compiled.stream(
+    {"user_input": "hello"},
+    config={"configurable": {"thread_id": "2"}}
+):
+    print(snapshot)
+
+# 9. Get state at any point
+state = compiled.get_state(config)
+print(state.values)
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+% SLIDE 35: Comparison - LangChain Chain vs LangGraph
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Comparison: LangChain Chain vs LangGraph}
+\textbf{LangChain Chain (simple linear):}
+\begin{lstlisting}
+from langchain_core.runnables import RunnableSequence
+chain = step1 | step2 | step3
+result = chain.invoke({"input": "..."})
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{LangGraph (stateful, looping):}
+\begin{lstlisting}
+graph = StateGraph(MyState)
+graph.add_node("step1", step1)
+graph.add_node("step2", step2)
+graph.add_node("step3", step3)
+graph.add_edge(START, "step1")
+graph.add_conditional_edges("step2", route, {...})
+compiled = graph.compile()
+result = compiled.invoke({"input": "..."})
+\end{lstlisting}
+
+\vspace{10pt}
+\textbf{When to use:}
+\begin{itemize}
+  \item \textbf{Chain:} Simple linear pipelines
+  \item \textbf{LangGraph:} Complex, looping, interactive agents
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% SLIDE 36: Integration with LangChain Tools
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Integration with LangChain Tools}
+\begin{lstlisting}
+from langchain_core.tools import tool
+from langgraph.prebuilt.tool_executor import ToolExecutor
+
+@tool
+def search(query: str) -> str:
+    """Search the web."""
+    return f"Results for {query}"
+
+tools = [search]
+tool_executor = ToolExecutor(tools)
+
+def tool_node(state: AgentState) -> dict:
+    tool_calls = state["tool_calls"]
+    results = [tool_executor.invoke(tc) for tc in tool_calls]
+    return {"tool_results": results}
+
+graph.add_node("tools", tool_node)
+graph.add_edge("agent", "tools")
+graph.add_edge("tools", "agent")
+\end{lstlisting}
+
+\textit{LangGraph + LangChain tools = powerful agent loops.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 37: LLM Integration - Structured Output
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{LLM Integration: Structured Output}
+\begin{lstlisting}
+from pydantic import BaseModel
+from langchain_core.language_models import BaseLanguageModel
+
+class AgentAction(BaseModel):
+    action: str
+    input: str
+
+def llm_node(state: AgentState) -> dict:
+    # Use structured output from LLM
+    llm = ChatOpenAI(model="gpt-4").with_structured_output(
+        AgentAction
+    )
+    action = llm.invoke([...])
+    return {
+        "action": action.action,
+        "input": action.input
+    }
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{Ensure LLM outputs conform to your state schema.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 38: Testing LangGraph Agents
+% ============================================================================
+\begin{frame}[fragile]
+\frametitle{Testing LangGraph Agents}
+\begin{lstlisting}
+import pytest
+
+def test_simple_agent():
+    graph = create_agent_graph()
+    compiled = graph.compile()
+
+    result = compiled.invoke({
+        "user_input": "Hello"
+    })
+
+    assert "output" in result
+    assert result["output"] is not None
+
+def test_conditional_routing():
+    # Test that routing works
+    result = compiled.invoke({
+        "user_input": "URGENT",
+        "priority": "high"
+    })
+    assert result["routed_to"] == "urgent_handler"
+\end{lstlisting}
+
+\vspace{10pt}
+\textit{Unit test nodes independently, then test full graph flows.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 39: Production Deployment Considerations
+% ============================================================================
+\begin{frame}
+\frametitle{Production Deployment Considerations}
+\begin{itemize}
+  \item \textbf{Checkpointing:} Use PostgreSQL or SQLite in production, not MemorySaver
+  \item \textbf{Monitoring:} Log node execution times, errors, and state transitions
+  \item \textbf{Versioning:} Version your graph definitions for reproducibility
+  \item \textbf{Resource limits:} Set timeouts on LLM calls, tool execution
+  \item \textbf{Async:} Use async nodes for I/O-bound operations
+  \item \textbf{Error handling:} Implement retry logic and graceful degradation
+  \item \textbf{State cleanup:} Archive old thread states to avoid DB bloat
+  \item \textbf{API integration:} Expose graph via FastAPI, handle concurrent requests
+\end{itemize}
+
+\vspace{15pt}
+\textit{LangGraph is production-ready; plan for scale and resilience.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 40: Self-Check Questions
+% ============================================================================
+\begin{frame}
+\frametitle{Self-Check Questions (1/2)}
+\begin{enumerate}
+  \item What is the key difference between LangChain chains and LangGraph?
+  \item How is state represented in LangGraph? What's the modern pattern?
+  \item Explain the relationship between nodes, edges, and state.
+  \item What does a node function return, and how is that merged into state?
+  \item How do you create a loop in a LangGraph?
+  \item What is the purpose of checkpointing?
+  \item Describe a use case for \texttt{interrupt\_before} vs \texttt{interrupt\_after}.
+\end{enumerate}
+\end{frame}
+
+% ============================================================================
+% SLIDE 41: Self-Check Questions (continued)
+% ============================================================================
+\begin{frame}
+\frametitle{Self-Check Questions (2/2)}
+\begin{enumerate}
+  \setcounter{enumi}{7}
+  \item What's the difference between \texttt{invoke()}, \texttt{stream()}, and \texttt{astream\_events()}?
+  \item How would you implement the ReAct (Reasoning + Acting) pattern as a LangGraph?
+  \item What are three common pitfalls in LangGraph design, and how do you avoid them?
+\end{enumerate}
+
+\vspace{15pt}
+\textbf{Answers should cover: graph structure, state management, cycles, checkpointing, streaming, and patterns.}
+\end{frame}
+
+% ============================================================================
+% SLIDE 42: Summary
+% ============================================================================
+\begin{frame}
+\frametitle{Summary: LangGraph Fundamentals}
+\begin{itemize}
+  \item \textbf{LangGraph:} Graph-based orchestration for stateful, looping agents
+  \item \textbf{Core components:} StateGraph, nodes, edges, START/END
+  \item \textbf{State:} Shared dict passed and merged through nodes
+  \item \textbf{Cycles:} First-class support for loops via conditional routing
+  \item \textbf{Checkpointing:} Save state at each step for interrupts, resumption, persistence
+  \item \textbf{Human-in-loop:} Pause execution, modify state, resume with interrupts
+  \item \textbf{Streaming:} Watch state evolution with \texttt{stream()} for long runs
+  \item \textbf{Patterns:} ReAct, multi-agent, map-reduce, tool-use loops
+  \item \textbf{Production-ready:} Use SQLite/PostgreSQL checkpointing, async, error handling
+\end{itemize}
+
+\vspace{15pt}
+\textbf{Next:} Apply LangGraph to build complex agents with reasoning, tool use, and human feedback!
+\end{frame}
+
+% ============================================================================
+% SLIDE 43: Key Takeaways
+% ============================================================================
+\begin{frame}
+\frametitle{Key Takeaways}
+\begin{center}
+\Large
+\textbf{Graphs $\neq$ Chains}
+
+\vspace{15pt}
+\normalsize
+State + Nodes + Edges + Conditional Routing = \\
+Powerful, looping, interactive agents
+
+\vspace{20pt}
+\textbf{Three Rules}
+\begin{enumerate}
+  \item Define state as TypedDict
+  \item Nodes return dicts (merge, don't replace)
+  \item Conditional routing enables loops
+\end{enumerate}
+
+\vspace{20pt}
+\textit{Master LangGraph and unlock agent complexity.}
+\end{center}
+\end{frame}
+
+% ============================================================================
+% SLIDE 44: Additional Resources
+% ============================================================================
+\begin{frame}
+\frametitle{Additional Resources}
+\begin{itemize}
+  \item \textbf{LangGraph Docs:} \url{https://langgraph.dev}
+  \item \textbf{StateGraph API:} TypedDict-based state definitions
+  \item \textbf{Checkpointing:} MemorySaver, SqliteSaver, PostgresSaver
+  \item \textbf{Prebuilt agents:} \texttt{create\_react\_agent()} in langgraph.prebuilt
+  \item \textbf{Examples:} LangChain docs, LangGraph GitHub repo
+  \item \textbf{Community:} LangChain Discord for patterns and troubleshooting
+\end{itemize}
+
+\vspace{20pt}
+\docref{langgraph.graph}, \docref{langgraph.checkpoint}
+\end{frame}
+
+% ============================================================================
+% SLIDE 45: Contact & Questions
+% ============================================================================
+\begin{frame}
+\frametitle{Thank You!}
+\begin{center}
+\Large
+\textbf{Questions?}
+
+\vspace{30pt}
+\normalsize
+Section 11: LangGraph Fundamentals \\
+Graph-based orchestration for intelligent agents
+
+\vspace{20pt}
+\textit{Build, test, deploy, and iterate with LangGraph.}
+\end{center}
+\end{frame}
+
+\end{document}

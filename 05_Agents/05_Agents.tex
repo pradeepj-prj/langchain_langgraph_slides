@@ -1,0 +1,1303 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangChain Agents}
+\subtitle{Section 05: Building Autonomous Reasoning Systems}
+\author{LangChain v1.2.x (March 2026)}
+\date{}
+
+\begin{document}
+
+% ============================================================
+% SLIDE 1: Title
+% ============================================================
+\frame{\titlepage}
+
+% ============================================================
+% SLIDE 2: Mental Model - What is an Agent?
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Mental Model: Agents as Reasoning Loops}
+
+An \textbf{agent} is an LLM that:
+\begin{enumerate}
+  \item Thinks about what to do next
+  \item Decides which tool(s) to call
+  \item Observes the tool results
+  \item Repeats until it has an answer
+\end{enumerate}
+
+\vspace{0.5cm}
+
+Unlike chains (linear), agents are \textbf{dynamic}:
+\begin{itemize}
+  \item Chain: ``Always call API, then summarize''
+  \item Agent: ``Analyze the query, then decide what tools I need''
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{conceptbox}[Key Insight]
+Agents are control flow determined by the LLM, not by you.
+\end{conceptbox}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 3: Formal Definition
+% ============================================================
+\begin{frame}
+\frametitle{What is an Agent? (Formal Definition)}
+
+\textbf{Definition:} An agent is a system that:
+
+\vspace{0.3cm}
+
+\begin{enumerate}
+  \item Takes a user query or goal as input
+  \item Uses an LLM to reason about which \textbf{tools} to invoke
+  \item Calls one or more tools with appropriate arguments
+  \item Observes the tool outputs
+  \item Iterates until it reaches a terminal state
+  \item Returns a final answer to the user
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\textbf{In LangChain v1.x:}
+\begin{itemize}
+  \item Agents are built on \textbf{LangGraph} under the hood
+  \item \texttt{create\_react\_agent()} is the main constructor
+  \item Returns a \texttt{CompiledGraph}—a runnable state machine
+  \item State tracks messages, tool calls, and observations
+\end{itemize}
+
+\docref{langchain.agents}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 4: The ReAct Pattern
+% ============================================================
+\begin{frame}
+\frametitle{The ReAct Pattern: Reason → Act → Observe}
+
+\textbf{ReAct} = \textbf{Re}asoning + \textbf{Act}ing
+
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Step} & \textbf{What Happens} \\
+\midrule
+Reason & LLM thinks: ``I need to do X'' \\
+Act & Agent calls tool(s) based on that reasoning \\
+Observe & Tool results are captured and fed back \\
+Think & LLM sees results, decides next step \\
+\midrule
+\multicolumn{2}{c}{Repeat until done} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+
+\textbf{Advantages:}
+\begin{itemize}
+  \item Transparent reasoning (you see the LLM's thoughts)
+  \item Robust error recovery (LLM can react to failures)
+  \item Flexible—handles new tools and tasks without retraining
+\end{itemize}
+
+\docref{Yao et al., ReAct: Synergizing Reasoning and Acting in Language Models}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 5: Agent Loop Diagram (TikZ)
+% ============================================================
+\begin{frame}
+\frametitle{Agent Loop Diagram}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.9, every node/.style={font=\small}]
+  % Define nodes
+  \node[rectangle, draw=lcblue, fill=lcblue!20, minimum width=2cm, minimum height=0.8cm] (input) at (0, 4) {User Query};
+
+  \node[rectangle, draw=lcorange, fill=lcorange!20, minimum width=2cm, minimum height=0.8cm] (think) at (0, 2.5) {Think};
+
+  \node[rectangle, draw=lcgreen, fill=lcgreen!20, minimum width=2cm, minimum height=0.8cm] (act) at (2.5, 2.5) {Act};
+
+  \node[rectangle, draw=lcgreen, fill=lcgreen!20, minimum width=2cm, minimum height=0.8cm] (observe) at (5, 2.5) {Observe};
+
+  \node[diamond, draw=lcred, fill=lcred!20, minimum width=1.5cm, aspect=1.2] (done) at (5, 0.5) {Done?};
+
+  \node[rectangle, draw=lcblue, fill=lcblue!20, minimum width=2cm, minimum height=0.8cm] (respond) at (5, -1.2) {Respond};
+
+  % Draw arrows
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcblue] (input) -- (think);
+
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcorange] (think) -- (act);
+
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcgreen] (act) -- (observe);
+
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcred] (observe) -- (done);
+
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcred] (done) -- node[right, font=\tiny] {Yes} (respond);
+
+  % Loop back
+  \draw[-{Stealth[scale=1.5]}, line width=1.5pt, lcorange] (done) -| node[below, font=\tiny] {No} (-1.5, 2.5) -- (think);
+
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.5cm}
+
+The agent iterates through Think → Act → Observe until it decides it's done.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 6: Static vs Dynamic Agents (v1.2.x)
+% ============================================================
+\begin{frame}
+\frametitle{Static vs Dynamic Agents in LangChain v1.2.x}
+
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Static Agents}
+\begin{itemize}
+  \item Tools are fixed at setup
+  \item Runs the same way every time
+  \item Predictable, testable
+  \item Example: calculator + web search
+\end{itemize}
+
+\vspace{0.5cm}
+
+\textbf{Use when:}
+\begin{itemize}
+  \item You have a known set of tools
+  \item Task is well-defined
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Dynamic Agents}
+\begin{itemize}
+  \item Tools can change at runtime
+  \item More flexible, adaptive
+  \item Harder to debug
+  \item Example: plugin-based system
+\end{itemize}
+
+\vspace{0.5cm}
+
+\textbf{Use when:}
+\begin{itemize}
+  \item Tools are user-provided
+  \item Extensible system needed
+\end{itemize}
+\end{columns}
+
+\vspace{0.5cm}
+
+\begin{tipbox}[LangChain v1.2.x]
+\texttt{create\_react\_agent()} supports both—pass tools at initialization.
+\end{tipbox}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 7: create_react_agent() Constructor
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{create\_react\_agent() — The Main Constructor}
+
+\begin{lstlisting}
+from langchain.agents import create_react_agent
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+# Define tools
+@tool
+def calculator(expression: str) -> str:
+    """Evaluate a math expression."""
+    return str(eval(expression))
+
+# Create the agent
+tools = [calculator]
+agent = create_react_agent(
+    llm=llm,
+    tools=tools,
+    prompt=None  # Uses default ReAct prompt
+)
+\end{lstlisting}
+
+\vspace{0.3cm}
+
+\textbf{What you get:} A \texttt{CompiledGraph} (LangGraph runnable)
+
+\docref{langchain.agents.create\_react\_agent}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 8: Running the Agent
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Running the Agent}
+
+\begin{lstlisting}
+from langchain.agents import AgentExecutor
+
+# Wrap in AgentExecutor for convenience
+executor = AgentExecutor(agent=agent, tools=tools)
+
+# Invoke it
+result = executor.invoke({
+    "input": "What is 42 + 8?"
+})
+
+print(result["output"])
+# Output: The answer is 50.
+\end{lstlisting}
+
+\vspace{0.5cm}
+
+\textbf{Key points:}
+\begin{itemize}
+  \item \texttt{AgentExecutor} wraps the agent graph
+  \item \texttt{invoke()} blocks until done
+  \item State dict contains \texttt{input} (query) and \texttt{output} (result)
+  \item Messages are tracked internally
+\end{itemize}
+
+\docref{langchain.agents.AgentExecutor}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 9: Complete Working Example
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Complete Working Example: ReAct Agent}
+
+\begin{lstlisting}
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+import math
+
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+@tool
+def add(a: float, b: float) -> float:
+    """Add two numbers."""
+    return a + b
+
+@tool
+def multiply(a: float, b: float) -> float:
+    """Multiply two numbers."""
+    return a * b
+
+tools = [add, multiply]
+agent = create_react_agent(llm, tools)
+executor = AgentExecutor(agent=agent, tools=tools)
+
+# Use it
+result = executor.invoke({"input": "Calculate 10 + 5 * 2"})
+print(result["output"])
+\end{lstlisting}
+
+\docref{create\_react\_agent, AgentExecutor}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 10: Agent State and Message History
+% ============================================================
+\begin{frame}
+\frametitle{Agent State and Message History}
+
+The agent maintains a \textbf{message history}:
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item \textbf{User message:} Your question
+  \item \textbf{AI message (Thought):} LLM's reasoning
+  \item \textbf{Tool call:} Which tool to invoke + args
+  \item \textbf{Tool message:} Result from the tool
+  \item (repeat Thought → Tool call → Tool message)
+  \item \textbf{Final AI message:} The answer
+\end{itemize}
+
+\vspace{0.5cm}
+
+\textbf{Access state:}
+
+\begin{lstlisting}
+# Via AgentExecutor
+result = executor.invoke({"input": "..."})
+print(result["output"])  # Final answer
+
+# Via intermediate steps
+intermediate = result.get("intermediate_steps", [])
+for step in intermediate:
+    tool_name, tool_input, tool_output = step
+    print(tool_name + ": " + tool_output)
+\end{lstlisting}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 11: Streaming Agent Output
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Streaming Agent Output with astream\_events()}
+
+Stream events as the agent thinks and acts:
+
+\vspace{0.3cm}
+
+\begin{lstlisting}
+async def stream_agent_output():
+    async for event in executor.astream_events(
+        {"input": "What is 5 + 3?"},
+        version="v1"
+    ):
+        kind = event["event"]
+        if kind == "on_llm_start":
+            print("LLM thinking...")
+        elif kind == "on_tool_start":
+            print(f"Calling {event['data']...}")
+        elif kind == "on_tool_end":
+            print(f"Tool returned: {event['data']...}")
+        elif kind == "on_chain_end":
+            print("Agent done!")
+
+# Run it
+import asyncio
+asyncio.run(stream_agent_output())
+\end{lstlisting}
+
+\vspace{0.3cm}
+
+\textbf{Use for:} Real-time UI updates, monitoring long-running agents
+
+\docref{astream\_events, AgentExecutor}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 12: Human-in-the-Loop Patterns
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Human-in-the-Loop: Interrupts and Confirmations}
+
+Pause agent execution to ask for approval:
+
+\vspace{0.3cm}
+
+\begin{lstlisting}
+# Configure to interrupt before tool calls
+agent_with_tools = create_react_agent(llm, tools)
+
+def approval_fn(state):
+    """Ask user before executing a tool."""
+    tool_name = state["messages"][-1].tool_calls[0]["name"]
+    approved = input(f"Approve {tool_name}? [y/n]: ")
+    return approved.lower() == "y"
+
+# Manually step through execution
+state = {"input": "Delete all files..."}
+for event in agent_with_tools.stream(state):
+    if should_interrupt(event):
+        if not approval_fn(event):
+            print("Tool rejected by user")
+            break
+\end{lstlisting}
+
+\vspace{0.3cm}
+
+\textbf{Use for:} Sensitive operations, safety-critical systems, user control
+
+\end{frame}
+
+% ============================================================
+% SLIDE 13: Agent with Structured Output
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Agent with Structured Output}
+
+Force agent to return structured output using tool schemas:
+
+\vspace{0.3cm}
+
+\begin{lstlisting}
+from pydantic import BaseModel
+from typing import List
+
+class PlanOutput(BaseModel):
+    steps: List[str]
+    estimated_time_mins: int
+
+# Tool with structured output
+@tool
+def create_plan(goal: str) -> PlanOutput:
+    """Create a structured plan."""
+    return PlanOutput(
+        steps=["Step 1", "Step 2"],
+        estimated_time_mins=30
+    )
+
+tools = [create_plan]
+agent = create_react_agent(llm, tools)
+result = executor.invoke({"input": "Plan a trip"})
+
+# Structured output returned
+plan = result.get("structured_output", {})
+print(plan.steps)
+\end{lstlisting}
+
+\docref{Tool schemas, pydantic integration}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 14: Multi-Tool Agents with Complex Reasoning
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Multi-Tool Agents with Complex Reasoning}
+
+\begin{lstlisting}
+@tool
+def search_web(query: str) -> str:
+    """Search the web."""
+    return f"Results for '{query}'"
+
+@tool
+def get_weather(location: str) -> str:
+    """Get current weather."""
+    return f"Weather in {location}: Sunny"
+
+@tool
+def send_email(to: str, subject: str, body: str) -> str:
+    """Send an email."""
+    return f"Email sent to {to}"
+
+tools = [search_web, get_weather, send_email]
+agent = create_react_agent(llm, tools)
+executor = AgentExecutor(agent=agent, tools=tools)
+
+# Agent picks the right tools in order
+result = executor.invoke({
+    "input": "Check weather in NYC and email results"
+})
+print(result["output"])
+\end{lstlisting}
+
+Agent automatically sequences tools based on the goal.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 15: Controlling Agent Behavior
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Controlling Agent Behavior: Prompts, Iterations, Stopping}
+
+\textbf{Custom system prompt:}
+
+\begin{lstlisting}
+from langchain_core.prompts import ChatPromptTemplate
+
+system_prompt = "You are a helpful assistant..."
+prompt = ChatPromptTemplate.from_messages([
+    ("system", system_prompt),
+    ("user", "{input}"),
+])
+
+agent = create_react_agent(llm, tools, prompt=prompt)
+\end{lstlisting}
+
+\textbf{Limit iterations:}
+
+\begin{lstlisting}
+executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    max_iterations=5,  # Stop after 5 tool calls
+    early_stopping_method="force"  # Force stop
+)
+\end{lstlisting}
+
+\docref{create\_react\_agent, AgentExecutor parameters}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 16: Error Handling in Agents
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Error Handling in Agents}
+
+\textbf{Handle tool failures gracefully:}
+
+\begin{lstlisting}
+from langchain.tools import Tool
+
+def safe_search(query: str):
+    try:
+        return search(query)
+    except Exception as e:
+        return f"Search failed: {e}"
+
+search_tool = Tool(
+    name="search",
+    func=safe_search,
+    description="Search the web safely"
+)
+
+executor = AgentExecutor(
+    agent=agent,
+    tools=[search_tool],
+    handle_parsing_errors=True  # Recover from parse errors
+)
+\end{lstlisting}
+
+\begin{warningbox}[Common Issues]
+\begin{itemize}
+  \item Infinite loops (tool keeps failing)
+  \item Token limit exceeded (too many iterations)
+  \item Hallucinated tool names
+\end{itemize}
+\end{warningbox}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 17: Debugging with LangSmith
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Agent Debugging and Tracing with LangSmith}
+
+Enable tracing to debug agent behavior:
+
+\begin{lstlisting}
+import os
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "your_key"
+os.environ["LANGCHAIN_PROJECT"] = "my-agent-project"
+
+# Now all agent runs are traced
+result = executor.invoke({"input": "What is 2 + 2?"})
+
+# View traces at https://smith.langchain.com
+\end{lstlisting}
+
+\vspace{0.5cm}
+
+\textbf{LangSmith shows:}
+\begin{itemize}
+  \item Full execution trace (every LLM call, tool call)
+  \item Latency breakdown
+  \item Token usage
+  \item Error traces
+  \item Comparison of runs
+\end{itemize}
+
+\docref{LangSmith tracing}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 18: Agents vs Chains
+% ============================================================
+\begin{frame}
+\frametitle{When to Use Agents vs Chains}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Aspect} & \textbf{Chain} & \textbf{Agent} \\
+\midrule
+Flow & Fixed, linear & Dynamic, reasoning-based \\
+Tool use & Hardcoded sequence & LLM decides \\
+Flexibility & Low & High \\
+Latency & Predictable & Variable \\
+Complexity & Low & Higher \\
+Debugging & Easier & Harder \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+
+\textbf{Use Chains when:}
+\begin{itemize}
+  \item Flow is well-defined (e.g., ``fetch data → transform → summarize'')
+  \item You need predictable latency
+  \item Low error rates are critical
+\end{itemize}
+
+\textbf{Use Agents when:}
+\begin{itemize}
+  \item Problem requires reasoning (``what tool do I need?'')
+  \item Tool sequence is unknown
+  \item Adaptability matters
+\end{itemize}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 19: Common Pitfalls
+% ============================================================
+\begin{frame}
+\frametitle{Common Pitfalls and How to Avoid Them}
+
+\begin{warningbox}[Pitfall 1: Infinite Loops]
+Agent keeps calling the same tool over and over.
+
+\textbf{Fix:} Set \texttt{max\_iterations}, use early stopping, improve tool descriptions.
+\end{warningbox}
+
+\begin{warningbox}[Pitfall 2: Poor Tool Descriptions]
+Agent picks wrong tool because description is vague.
+
+\textbf{Fix:} Write clear, precise tool docs with examples.
+\end{warningbox}
+
+\begin{warningbox}[Pitfall 3: Missing Error Handling]
+Tool fails, agent halts or gives bad answer.
+
+\textbf{Fix:} Wrap tools with try/catch, return informative error messages.
+\end{warningbox}
+
+\begin{warningbox}[Pitfall 4: Token Overflow]
+Agent uses too many tokens and context window fills up.
+
+\textbf{Fix:} Use message summarization, limit iterations, pick smaller LLM.
+\end{warningbox}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 20: Production-Ready Agent Pattern
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Production-Ready Agent Pattern}
+
+A robust pattern for production systems:
+
+\begin{lstlisting}
+from langchain.agents import create_react_agent, AgentExecutor
+from tenacity import retry, stop_after_attempt
+
+class ProductionAgent:
+    def __init__(self, llm, tools):
+        self.agent = create_react_agent(llm, tools)
+        self.executor = AgentExecutor(
+            agent=self.agent,
+            tools=tools,
+            max_iterations=10,
+            early_stopping_method="force",
+            handle_parsing_errors=True
+        )
+
+    @retry(stop=stop_after_attempt(3))
+    def run(self, query: str, timeout: int = 30) -> str:
+        try:
+            result = self.executor.invoke(
+                {"input": query},
+                config={"timeout": timeout}
+            )
+            return result["output"]
+        except Exception as e:
+            return f"Error: {str(e)[:100]}"
+\end{lstlisting}
+
+\textbf{Features:} Retries, timeouts, error handling, iteration limits.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 21: Async Agents
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Async Agents for Concurrency}
+
+Use async for non-blocking operations:
+
+\begin{lstlisting}
+async def async_agent_example():
+    # Use async tools
+    @tool
+    async def fetch_data(url: str) -> str:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(url) as r:
+                return await r.text()
+
+    tools = [fetch_data]
+    agent = create_react_agent(llm, tools)
+    executor = AgentExecutor(agent=agent, tools=tools)
+
+    # Run asynchronously
+    result = await executor.ainvoke({"input": "Fetch..."})
+    return result["output"]
+
+# Call it
+import asyncio
+output = asyncio.run(async_agent_example())
+\end{lstlisting}
+
+\docref{ainvoke, async tools}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 22: Agent Middleware and Hooks
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Agent Middleware and Hooks}
+
+Intercept and modify agent behavior:
+
+\begin{lstlisting}
+# Log every tool call
+from langchain.callbacks import BaseCallbackHandler
+
+class LoggingCallback(BaseCallbackHandler):
+    def on_tool_start(self, **kwargs):
+        print(f"Tool started: {kwargs['tool']}")
+
+    def on_tool_end(self, output, **kwargs):
+        print(f"Tool output: {output[:50]}...")
+
+executor = AgentExecutor(agent=agent, tools=tools)
+result = executor.invoke(
+    {"input": "What is 5 + 3?"},
+    config={"callbacks": [LoggingCallback()]}
+)
+\end{lstlisting}
+
+\textbf{Hooks:} \texttt{on\_llm\_start}, \texttt{on\_tool\_start}, \texttt{on\_chain\_end}, etc.
+
+\docref{CallbackHandler}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 23: Hierarchical Agents (Agent Teams)
+% ============================================================
+\begin{frame}
+\frametitle{Hierarchical Agents: Agent Teams}
+
+\textbf{Idea:} Use agents as tools for other agents.
+
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.85]
+  \node[rectangle, draw=lcblue, fill=lcblue!20, minimum width=2cm] (main) at (2, 3) {Main Agent};
+
+  \node[rectangle, draw=lcgreen, fill=lcgreen!20, minimum width=1.5cm] (agent1) at (0, 1) {Research Agent};
+  \node[rectangle, draw=lcgreen, fill=lcgreen!20, minimum width=1.5cm] (agent2) at (2, 1) {Math Agent};
+  \node[rectangle, draw=lcgreen, fill=lcgreen!20, minimum width=1.5cm] (agent3) at (4, 1) {Write Agent};
+
+  \draw[-{Stealth[scale=1.5]}] (main) -- (agent1);
+  \draw[-{Stealth[scale=1.5]}] (main) -- (agent2);
+  \draw[-{Stealth[scale=1.5]}] (main) -- (agent3);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.5cm}
+
+\textbf{Benefits:}
+\begin{itemize}
+  \item Modular: each agent has one responsibility
+  \item Scalable: add agents without retraining
+  \item Debuggable: trace each sub-agent
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{lstlisting}
+@tool
+def run_research_agent(query: str) -> str:
+    """Run the research sub-agent."""
+    result = research_executor.invoke({"input": query})
+    return result["output"]
+
+tools = [run_research_agent]
+main_agent = create_react_agent(llm, tools)
+\end{lstlisting}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 24: Memory in Agents
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Memory in Agents}
+
+Agents have implicit memory via message history:
+
+\begin{lstlisting}
+# Each invoke call includes all prior messages
+executor = AgentExecutor(agent=agent, tools=tools)
+
+# First query
+result1 = executor.invoke({"input": "My name is Alice"})
+
+# Second query (with memory)
+result2 = executor.invoke({"input": "What is my name?"})
+# Agent remembers: Alice
+\end{lstlisting}
+
+\textbf{Explicit memory with chat history:}
+
+\begin{lstlisting}
+from langchain_community.chat_message_histories import SQLChatMessageHistory
+
+history = SQLChatMessageHistory(
+    session_id="user-123",
+    connection_string="sqlite:///memory.db"
+)
+
+# Auto-load and save history
+agent.with_message_history(history).invoke(...)
+\end{lstlisting}
+
+\docref{Memory integration}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 25: Tool Validation and Schemas
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Tool Validation and Schemas}
+
+Define strict schemas for tools:
+
+\begin{lstlisting}
+from pydantic import BaseModel, Field
+
+class SearchInput(BaseModel):
+    query: str = Field(description="Search query")
+    max_results: int = Field(10, description="Max results")
+
+@tool
+def search(input: SearchInput) -> str:
+    """Search the web with validation."""
+    return f"Results for {input.query}"
+
+# LLM respects the schema
+tools = [search]
+agent = create_react_agent(llm, tools)
+
+# Agent passes correctly typed arguments
+executor.invoke({"input": "Search for cats with 5 results"})
+\end{lstlisting}
+
+\textbf{Benefits:}
+\begin{itemize}
+  \item Type-safe tool calls
+  \item LLM gets clear argument specs
+  \item Runtime validation
+\end{itemize}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 26: Tool Error Recovery
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Tool Error Recovery}
+
+Handle tool failures and let agent retry:
+
+\begin{lstlisting}
+from langchain_core.tools import tool
+
+@tool
+def unstable_api(query: str) -> str:
+    """May fail sometimes."""
+    import random
+    if random.random() < 0.5:
+        raise Exception("API temporarily down")
+    return f"Result: {query}"
+
+# Agent automatically retries on tool error
+tools = [unstable_api]
+executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    handle_parsing_errors=True
+)
+
+result = executor.invoke({"input": "Call API"})
+# Agent may retry or use alternative approach
+\end{lstlisting}
+
+\textbf{Key:} Tools should return error messages, not throw exceptions.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 27: Agent Observability
+% ============================================================
+\begin{frame}
+\frametitle{Agent Observability and Monitoring}
+
+Key metrics to track in production:
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item \textbf{Success rate:} \% of queries answered correctly
+  \item \textbf{Tool accuracy:} How often tools give right results
+  \item \textbf{Latency:} Time per query (and per iteration)
+  \item \textbf{Token usage:} Tokens consumed (cost)
+  \item \textbf{Max iterations hit:} \% of runs hitting iteration limit
+  \item \textbf{Tool call distribution:} Which tools used most
+  \item \textbf{Error rate:} \% of runs with errors
+\end{itemize}
+
+\vspace{0.5cm}
+
+\textbf{Tools:}
+\begin{itemize}
+  \item \textbf{LangSmith:} Full tracing and analytics
+  \item \textbf{Custom logging:} Write metrics to database
+  \item \textbf{APM (Datadog, New Relic):} Integration hooks
+\end{itemize}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 28: Advanced: Conditional Logic in Agents
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Advanced: Conditional Logic via Tool Descriptions}
+
+Guide agent behavior through tool descriptions:
+
+\begin{lstlisting}
+@tool
+def search_internal(query: str) -> str:
+    """Search only internal documents. Use for proprietary info."""
+    return f"Internal result: {query}"
+
+@tool
+def search_web(query: str) -> str:
+    """Search public web. Use for general knowledge."""
+    return f"Web result: {query}"
+
+# LLM reads descriptions and picks appropriate tool
+tools = [search_internal, search_web]
+agent = create_react_agent(llm, tools)
+
+# For internal query, LLM chooses search_internal
+# For general query, LLM chooses search_web
+executor.invoke({"input": "Our Q4 revenue..."})
+\end{lstlisting}
+
+\textbf{Key:} Clear descriptions = better tool selection.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 29: Tool Composition
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Tool Composition: Tools that Call Tools}
+
+Tools can be built from other tools:
+
+\begin{lstlisting}
+@tool
+def compound_search(query: str) -> str:
+    """Search web and email simultaneously."""
+    web = search_web(query)
+    email = search_email(query)
+    return f"Web: {web}\nEmail: {email}"
+
+# This tool is itself a tool that agent can call
+tools = [compound_search, search_web, search_email]
+agent = create_react_agent(llm, tools)
+\end{lstlisting}
+
+\textbf{Benefits:}
+\begin{itemize}
+  \item Reduce agent decision-making
+  \item Pre-compose complex workflows
+  \item Hide implementation details
+\end{itemize}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 30: Conclusion and Cheat Sheet
+% ============================================================
+\begin{frame}[fragile]
+\frametitle{Agents: Quick Cheat Sheet}
+
+\textbf{Create an agent:}
+\begin{lstlisting}
+from langchain.agents import create_react_agent, AgentExecutor
+agent = create_react_agent(llm, tools)
+executor = AgentExecutor(agent=agent, tools=tools)
+\end{lstlisting}
+
+\textbf{Run it:}
+\begin{lstlisting}
+result = executor.invoke({"input": "Your query"})
+output = result["output"]
+\end{lstlisting}
+
+\textbf{Stream it:}
+\begin{lstlisting}
+async for event in executor.astream_events({"input": "..."}, version="v1"):
+    print(event)
+\end{lstlisting}
+
+\textbf{Key configs:}
+\begin{lstlisting}
+AgentExecutor(agent=agent, tools=tools,
+              max_iterations=5, early_stopping_method="force",
+              handle_parsing_errors=True)
+\end{lstlisting}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 31: Summary: What We Learned
+% ============================================================
+\begin{frame}
+\frametitle{Summary: Section 05 - Agents}
+
+\textbf{Core Concepts:}
+\begin{enumerate}
+  \item Agents are LLMs that reason and decide which tools to use
+  \item ReAct pattern: Reason → Act → Observe → Repeat
+  \item \texttt{create\_react\_agent()} builds agents on LangGraph
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\textbf{Implementation:}
+\begin{enumerate}
+  \item Define tools with clear descriptions
+  \item Create agent with \texttt{create\_react\_agent(llm, tools)}
+  \item Run via \texttt{AgentExecutor.invoke()} or stream
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\textbf{Production Readiness:}
+\begin{enumerate}
+  \item Set iteration limits, error handling, timeouts
+  \item Use LangSmith for debugging and observability
+  \item Test agents thoroughly (infinite loops, edge cases)
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\textbf{When to use agents:} Problems requiring reasoning and dynamic tool selection.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 32: Self-Check Questions
+% ============================================================
+\begin{frame}
+\frametitle{Self-Check: Test Your Understanding}
+
+\textbf{Question 1:} What is the core difference between a chain and an agent?
+
+\vspace{0.3cm}
+
+\textbf{Question 2:} Describe the ReAct pattern in one sentence.
+
+\vspace{0.3cm}
+
+\textbf{Question 3:} What does \texttt{create\_react\_agent()} return?
+
+\vspace{0.3cm}
+
+\textbf{Question 4:} Why is a good tool description important?
+
+\vspace{0.3cm}
+
+\textbf{Question 5:} Name 3 common pitfalls when building agents.
+
+\vspace{0.3cm}
+
+\textbf{Question 6:} How do you enable tracing for debugging?
+
+\vspace{0.3cm}
+
+\textbf{Question 7:} What is the purpose of \texttt{max\_iterations} in AgentExecutor?
+
+\vspace{0.3cm}
+
+\textbf{Question 8:} When would you choose an agent over a chain?
+
+\end{frame}
+
+% ============================================================
+% SLIDE 33: Suggested Answers
+% ============================================================
+\begin{frame}
+\frametitle{Suggested Answers}
+
+\textbf{Q1:} Chains have fixed, linear flow. Agents use LLM to decide tool sequence dynamically.
+
+\vspace{0.2cm}
+
+\textbf{Q2:} Agent thinks about a step, acts (calls a tool), observes the result, then repeats until done.
+
+\vspace{0.2cm}
+
+\textbf{Q3:} A \texttt{CompiledGraph} (LangGraph runnable state machine).
+
+\vspace{0.2cm}
+
+\textbf{Q4:} Poor descriptions cause agents to pick wrong tools or fail to recognize which tool to use.
+
+\vspace{0.2cm}
+
+\textbf{Q5:} (1) Infinite loops, (2) Poor tool descriptions, (3) Missing error handling, (4) Token overflow, (5) Hallucinated tools.
+
+\vspace{0.2cm}
+
+\textbf{Q6:} Set \texttt{LANGCHAIN\_TRACING\_V2=true} and \texttt{LANGCHAIN\_API\_KEY} environment variables.
+
+\vspace{0.2cm}
+
+\textbf{Q7:} Prevent infinite loops by halting execution after N iterations.
+
+\vspace{0.2cm}
+
+\textbf{Q8:} When the task requires reasoning, tool selection is unknown, or multiple tool paths are viable.
+
+\end{frame}
+
+% ============================================================
+% SLIDE 34: Further Learning Resources
+% ============================================================
+\begin{frame}
+\frametitle{Further Learning Resources}
+
+\textbf{Official Documentation:}
+\begin{itemize}
+  \item \texttt{langchain.agents} module
+  \item LangGraph quickstart (agents built on LangGraph)
+  \item Tool integration examples
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Recommended Patterns:}
+\begin{itemize}
+  \item Hierarchical agents (agent teams)
+  \item Human-in-the-loop with confirmations
+  \item Structured output agents
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Debugging Tools:}
+\begin{itemize}
+  \item LangSmith for tracing
+  \item \texttt{astream\_events()} for streaming
+  \item Callback handlers for custom logging
+\end{itemize}
+
+\vspace{0.3cm}
+
+\docref{langchain.agents, LangGraph, LangSmith}
+
+\end{frame}
+
+% ============================================================
+% SLIDE 35: Next Steps
+% ============================================================
+\begin{frame}
+\frametitle{Next Steps}
+
+\textbf{After this section, you can:}
+\begin{enumerate}
+  \item Build a functional ReAct agent with custom tools
+  \item Debug agents using LangSmith
+  \item Handle errors and edge cases
+  \item Deploy agents safely to production
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\textbf{Practice exercise:}
+\begin{enumerate}
+  \item Create a weather agent with tools for:
+    \begin{itemize}
+      \item Get current weather
+      \item Get forecast
+      \item Convert units
+    \end{itemize}
+  \item Test with: ``What will the weather be in NYC this weekend in Celsius?''
+  \item Trace the agent execution with LangSmith
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\textbf{Section 06 preview:} Multi-agent systems and LangGraph state machines.
+
+\end{frame}
+
+\end{document}
