@@ -19,13 +19,13 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
 
 \lstset{
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\tiny,
   backgroundcolor=\color{codebg},
   breaklines=true,
   frame=single,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -54,7 +56,7 @@
 % =============================================================================
 \begin{frame}
   \titlepage
-  \vspace{1em}
+  \vspace{0.3em}
   \begin{center}
     {\color{lcblue}\textbf{Building composable, type-safe AI applications with LCEL}}
   \end{center}
@@ -64,7 +66,7 @@
 % AGENDA
 % =============================================================================
 \begin{frame}{Agenda}
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item \textbf{What is LCEL?} The mental model
     \item \textbf{The Runnable protocol} — invoke, batch, stream, async variants
     \item \textbf{The pipe operator} |  — composition syntax
@@ -75,7 +77,7 @@
     \item \textbf{Comparison} — LCEL vs legacy Chain classes
     \item \textbf{Cheat sheet \& self-check}
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.3em}
   \small \textit{Coverage: LangChain v1.2.x (Core + Community packages)}
 \end{frame}
 
@@ -87,28 +89,28 @@
 \begin{frame}{What is LCEL?}
   \textbf{LCEL = LangChain Expression Language}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \begin{conceptbox}[Definition]
     A declarative API for composing language model applications into modular,
     reusable, and type-safe data pipelines using a consistent \textbf{Runnable protocol}.
   \end{conceptbox}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \textbf{Three pillars:}
-  \begin{enumerate}
+  \begin{enumerate}\setlength{\itemsep}{1pt}
     \item \textbf{Runnable Protocol} — standardized interface for any component
     \item \textbf{Pipe Operator} | — chainable, readable syntax
     \item \textbf{Type Safety} — input/output schemas ensure compatibility
   \end{enumerate}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \textit{Think: Unix pipes, but for LLM workflows.}
 \end{frame}
 
 \begin{frame}{Why LCEL? The Problem}
   \textbf{Legacy Chain classes had pain points:}
 
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item Different `.run()` / `.call()` signatures across chain types
     \item No standard way to compose chains together
     \item Async support was inconsistent (or missing)
@@ -117,10 +119,10 @@
     \item Hard to test, debug, and reuse components
   \end{itemize}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \textbf{LCEL solves this:}
 
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item One protocol, one syntax, unlimited flexibility
     \item Compose anything into anything (prompt + model + parser)
     \item First-class async and streaming
@@ -134,7 +136,7 @@
     \texttt{\$ echo "What is gravity?" | curl-llm | json-parser}
   \end{center}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \small
   \begin{tabular}{ll}
     \textbf{Unix pipe} & \textbf{LCEL equivalent} \\
@@ -145,7 +147,7 @@
     \texttt{json-parser} (transform) & Parser, RunnableLambda \\
   \end{tabular}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \small \textit{The mental model: data flows left-to-right; each stage transforms and passes to the next.}
 \end{frame}
 
@@ -169,10 +171,10 @@ async .astream(input) -> AsyncIterator[output]
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \textbf{Key idea:} Every LangChain component implements this protocol.
 
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item LLMs, prompts, parsers, retrievers, tools, custom functions
     \item All composable; all have the same interface
     \item Mix sync/async freely (LCEL handles the plumbing)
@@ -223,7 +225,7 @@ for output in chain.batch([...], {max_concurrency: 5}):
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small \textit{Streaming is critical for user-facing LLM apps (show tokens as they're generated, not all at once).}
 \end{frame}
 
@@ -246,7 +248,7 @@ for output in chain.batch([...], {max_concurrency: 5}):
     \hline
   \end{tabular}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \small \textbf{Rule of thumb:} Use \texttt{batch()} for throughput, \texttt{stream()} for UX, \texttt{async} for scalability.
 \end{frame}
 
@@ -273,7 +275,7 @@ chain = prompt | model | output_parser
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \begin{tipbox}[Key Insight]
     The pipe operator is \textbf{syntactic sugar}. Under the hood, it creates a
     \texttt{RunnableSequence} that orchestrates the flow.
@@ -303,7 +305,7 @@ output2 = chain2.invoke({"topic": "gravity"})
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small The pipe operator nests automatically; LCEL handles intermediate steps.
 \end{frame}
 
@@ -330,7 +332,7 @@ chain = prompt | model | {"original": RunnablePassthrough(), "parsed": parser}
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small The pipe operator is polymorphic: dict means parallel, list means branching, Runnable means sequential.
 \end{frame}
 
@@ -394,7 +396,7 @@ print(chain.output_schema.schema())
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small \textit{Input/output schemas are the contract: they define what the Runnable accepts and produces.}
 \end{frame}
 
@@ -619,7 +621,7 @@ output = chain.invoke("What is quantum entanglement?")
 % =============================================================================
 \section{Resilience \& Configuration}
 
-\begin{frame}[fragile]{Fallbacks: Graceful Degradation}
+\begin{frame}[fragile,shrink=3]{Fallbacks: Graceful Degradation}
   \begin{codebox}[Fallback Chains]
 \begin{lstlisting}
 from langchain_core.runnables import RunnableLambda
@@ -653,7 +655,7 @@ chain = primary.with_fallbacks(
   \docref{with\_fallbacks}
 \end{frame}
 
-\begin{frame}[fragile]{Retry Logic: Resilience}
+\begin{frame}[fragile,shrink=3]{Retry Logic: Resilience}
   \begin{codebox}[Automatic Retries]
 \begin{lstlisting}
 # Retry with exponential backoff
@@ -684,7 +686,7 @@ chain = (
   \docref{with\_retry}
 \end{frame}
 
-\begin{frame}[fragile]{Configurable Fields: Runtime Flexibility}
+\begin{frame}[fragile,shrink=3]{Configurable Fields: Runtime Flexibility}
   \begin{codebox}[Parameterize at Runtime]
 \begin{lstlisting}
 from langchain_core.runnables import ConfigurableField
@@ -719,7 +721,7 @@ output = model_selector.invoke(
   \end{codebox}
 \end{frame}
 
-\begin{frame}[fragile]{Binding Parameters: Partial Application}
+\begin{frame}[fragile,shrink=3]{Binding Parameters: Partial Application}
   \begin{codebox}[.bind() for Fixed Values]
 \begin{lstlisting}
 from langchain_openai import ChatOpenAI
@@ -788,7 +790,7 @@ chain = (
   \end{codebox}
 \end{frame}
 
-\begin{frame}[fragile]{Debugging Chains}
+\begin{frame}[fragile,shrink=2]{Debugging Chains}
   \begin{codebox}[Inspecting Intermediate Steps]
 \begin{lstlisting}
 # Method 1: Print in RunnableLambda
@@ -847,7 +849,7 @@ for outputs in chain.batch_as_completed(
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small \textbf{Key:} \texttt{batch()} uses concurrency; much faster than sequential \texttt{invoke()} loops.
 \end{frame}
 
@@ -856,9 +858,9 @@ for outputs in chain.batch_as_completed(
 % =============================================================================
 \section{Visualization \& Comparison}
 
-\begin{frame}{Complex Chain Data Flow (TikZ Diagram)}
+\begin{frame}[shrink=5]{Complex Chain Data Flow (TikZ Diagram)}
   \begin{center}
-    \begin{tikzpicture}[node distance=2cm, auto]
+    \begin{tikzpicture}[node distance=0.9cm, auto, minimum height=0.5cm, scale=0.8]
       % Input
       \node[rectangle, draw, fill=lcgreen!30] (input) {Question};
 
@@ -893,7 +895,7 @@ for outputs in chain.batch_as_completed(
     \end{tikzpicture}
   \end{center}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small Data flows top-to-bottom; parallel stages (retriever + re-rank) combine before prompt.
 \end{frame}
 
@@ -921,7 +923,7 @@ for outputs in chain.batch_as_completed(
     \hline
   \end{tabular}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \textbf{Bottom line:} Use LCEL for all new work. Legacy chains are deprecated.
 \end{frame}
 
@@ -948,7 +950,7 @@ result = chain.invoke({"topic": "AI"})
 \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5em}
+  \vspace{0.12em}
   \small The LCEL version is shorter, more flexible, and works with streaming, async, and batching out-of-the-box.
 \end{frame}
 
@@ -958,7 +960,7 @@ result = chain.invoke({"topic": "AI"})
 \section{Summary \& Cheat Sheet}
 
 \begin{frame}{Key Takeaways}
-  \begin{enumerate}
+  \begin{enumerate}\setlength{\itemsep}{1pt}
     \item \textbf{LCEL is the composition language} for LangChain — use for all new applications
     \item \textbf{Runnable protocol} is universal — invoke, batch, stream, + async variants
     \item \textbf{Pipe operator} | makes chains readable and composable
@@ -970,11 +972,11 @@ result = chain.invoke({"topic": "AI"})
     \item \textbf{LCEL scales} from simple 1-line chains to complex multi-step systems
   \end{enumerate}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \small \textit{Philosophy: Composability over complexity. Simplicity over magic.}
 \end{frame}
 
-\begin{frame}[fragile]{Quick Reference}
+\begin{frame}[fragile,shrink=2]{Quick Reference}
   \small
   \begin{codebox}[Common Patterns]
 \begin{lstlisting}
@@ -1009,27 +1011,27 @@ model.configurable_alternatives(...)
 \end{frame}
 
 \begin{frame}{Self-Check Questions}
-  \begin{enumerate}
+  \begin{enumerate}\setlength{\itemsep}{1pt}
     \item What is the Runnable protocol? Name all six core methods.
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item Why use \texttt{batch()} instead of a loop of \texttt{invoke()} calls?
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item How does the pipe operator | work? What does it create under the hood?
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item When would you use RunnablePassthrough vs RunnableLambda?
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item How do you add error recovery to a chain?
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item Name three ways to make a chain configurable at runtime.
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item What's the difference between .stream() and .batch()?
-    \vspace{0.5em}
+    \vspace{0.12em}
     \item How do you debug an LCEL chain to see intermediate outputs?
   \end{enumerate}
 \end{frame}
 
 \begin{frame}{Answer Key (Summary)}
-  \begin{enumerate}
+  \begin{enumerate}\setlength{\itemsep}{1pt}
     \item invoke, batch, stream, ainvoke, abatch, astream
     \item \texttt{batch()} uses concurrency; much faster for multiple inputs
     \item Pipe creates \texttt{RunnableSequence}; composes left-to-right
@@ -1046,16 +1048,16 @@ model.configurable_alternatives(...)
 % =============================================================================
 
 \begin{frame}{Resources \& Further Reading}
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item \textbf{Official Docs:} \url{https://python.langchain.com/docs/expression_language}
     \item \textbf{GitHub:} \url{https://github.com/langchain-ai/langchain}
     \item \textbf{Runnable API:} \url{https://api.python.langchain.com/en/latest/runnables/}
     \item \textbf{LangSmith (debugging):} \url{https://smith.langchain.com/}
   \end{itemize}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \textbf{Next steps:}
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item Build a simple RAG chain with LCEL
     \item Experiment with streaming in a web app
     \item Profile batch() performance vs invoke() loops
@@ -1063,7 +1065,7 @@ model.configurable_alternatives(...)
     \item Explore callbacks for observability
   \end{itemize}
 
-  \vspace{1em}
+  \vspace{0.3em}
   \small \textit{Version: LangChain v1.2.x (March 2026)}
 \end{frame}
 
@@ -1074,7 +1076,7 @@ model.configurable_alternatives(...)
   \vspace{2em}
   \normalsize
   Deep-dive conversation ready to continue on:
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1pt}
     \item Advanced streaming patterns
     \item Custom Runnable implementations
     \item Performance tuning for production

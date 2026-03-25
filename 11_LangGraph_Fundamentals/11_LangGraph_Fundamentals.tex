@@ -19,13 +19,13 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
 
 \lstset{
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\tiny,
   backgroundcolor=\color{codebg},
   breaklines=true,
   frame=single,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -60,6 +62,7 @@
 \begin{frame}[fragile]
 \frametitle{What We'll Cover}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Mental model: LangGraph as a graph-based orchestration framework
   \item LangGraph vs LangChain: relationships and use cases
   \item Core concepts: StateGraph, nodes, edges, START/END
@@ -79,6 +82,7 @@
 \begin{frame}
 \frametitle{Mental Model: LangGraph as Graph Orchestration}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{LangGraph:} A graph-based framework for orchestrating multi-step agent workflows
   \item Nodes = functions that read/write \textit{state}
   \item Edges = transitions between nodes (conditional or fixed)
@@ -99,6 +103,7 @@
 \begin{frame}
 \frametitle{Why LangGraph? Problems It Solves}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Cycles \& Loops:} Chains are DAGs (acyclic). Agents need feedback loops for reflection, retries, iteration.
   \item \textbf{Explicit State:} Chains pass one output as next input. LangGraph manages rich, multi-field state.
   \item \textbf{Conditional Routing:} Complex branching logic needs explicit graph structure, not nested if/else.
@@ -139,6 +144,7 @@ Ideal For & Simple pipelines & Complex agents, multi-step workflows \\
 \begin{frame}[fragile]
 \frametitle{Core Concept: StateGraph}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{StateGraph:} A class that builds a graph with explicit state
   \item State is defined as a \texttt{TypedDict} (modern Python 3.8+)
   \item StateGraph constructor takes the state class
@@ -169,6 +175,7 @@ graph = StateGraph(AgentState)
 \begin{frame}[fragile]
 \frametitle{Nodes: Functions That Read and Write State}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Node:} A Python function that receives state, performs work, returns updated state
   \item Signature: \texttt{def node\_name(state: StateType) -> dict}
   \item \textbf{Return value:} A dict with keys to update in state (merged, not replaced)
@@ -196,6 +203,7 @@ graph.add_node("process", process_node)
 \begin{frame}[fragile]
 \frametitle{Edges: Connecting Nodes}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Edge:} A transition from one node to another
   \item \textbf{Normal edge:} \texttt{add\_edge(source, target)} — always routes from source to target
   \item \textbf{Conditional edge:} \texttt{add\_conditional\_edges(source, routing\_func, mapping)}
@@ -224,6 +232,7 @@ graph.add_conditional_edges("process", route,
 \begin{frame}[fragile]
 \frametitle{START and END: Special Nodes}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{START:} Virtual node representing graph entry point
   \item \textbf{END:} Virtual node representing graph exit
   \item Import: \texttt{from langgraph.graph import START, END}
@@ -282,6 +291,7 @@ print(result["response"])  # "You said: Hello"
 \begin{frame}
 \frametitle{State Management: How State Flows Through the Graph}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item State is initialized when you call \texttt{invoke(initial\_state)} or \texttt{stream(initial\_state)}
   \item Each node receives the current state (all fields)
   \item Node returns a dict with updates; these are \textbf{merged} into state
@@ -321,6 +331,7 @@ graph.add_conditional_edges(
 \vspace{10pt}
 \textbf{Key points:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Routing function receives state, returns string (next node name)
   \item Mapping dict maps return value to actual node/END
   \item Enables loops, retries, branching based on runtime conditions
@@ -331,38 +342,40 @@ graph.add_conditional_edges(
 % SLIDE 13: TikZ Diagram - Multi-Step Agent Graph
 % ============================================================================
 \begin{frame}
-\frametitle{TikZ Diagram: Multi-Step Agent Graph with Branching}
+\frametitle{Multi-Step Agent Graph with Branching}
+\vspace{-0.6cm}
 \begin{center}
 \begin{tikzpicture}[
-  node distance=2.5cm,
-  every node/.style={draw, rounded rectangle, minimum width=2.2cm, minimum height=0.8cm, font=\small},
-  >=Stealth
+  node distance=1cm,
+  every node/.style={draw, rounded rectangle, minimum width=0.9cm, minimum height=0.35cm, font=\tiny},
+  >=Stealth,
+  scale=0.5
 ]
 
 % Nodes
-\node (start) [fill=lcgreen!70, text=white] {START};
-\node (input) [below=of start, fill=lcblue!70, text=white] {Input Node};
+\node (start) [fill=lcgreen!70, text=white] {Start};
+\node (input) [below=of start, fill=lcblue!70, text=white] {Input};
 \node (think) [below=of input, fill=lcblue!70, text=white] {Think};
 \node (decide) [below=of think, fill=lcorange!70, text=white] {Decide};
-\node (act) [below left=1.5cm and 1.5cm of decide, fill=lcblue!70, text=white] {Act};
-\node (refine) [below right=1.5cm and 1.5cm of decide, fill=lcblue!70, text=white] {Refine};
-\node (end) [below right=2cm and 0.5cm of act, fill=lcred!70, text=white] {END};
+\node (act) [below left=0.8cm and 0.8cm of decide, fill=lcblue!70, text=white] {Act};
+\node (refine) [below right=0.8cm and 0.8cm of decide, fill=lcblue!70, text=white] {Refine};
+\node (end) [below right=1cm and 0.2cm of act, fill=lcred!70, text=white] {End};
 
 % Edges
 \draw [->, thick] (start) -- (input);
 \draw [->, thick] (input) -- (think);
 \draw [->, thick] (think) -- (decide);
-\draw [->, thick] (decide) -- (act) node [midway, left, font=\tiny] {if action};
-\draw [->, thick] (decide) -- (refine) node [midway, right, font=\tiny] {if refine};
+\draw [->, thick] (decide) -- (act);
+\draw [->, thick] (decide) -- (refine);
 \draw [->, thick] (act) -- (end);
 \draw [->, thick] (refine) -- (end);
 \draw [<->, thick, dashed] (think) edge[bend left=40] (act);
 
 \end{tikzpicture}
 \end{center}
-
-\small
-Feedback loop: Act can loop back to Think for multi-step reasoning.
+\vspace{-0.5cm}
+\tiny
+Feedback loop: Think $\to$ Act $\to$ Think
 \end{frame}
 
 % ============================================================================
@@ -371,10 +384,12 @@ Feedback loop: Act can loop back to Think for multi-step reasoning.
 \begin{frame}
 \frametitle{Cycles in Graphs: How LangGraph Enables Loops}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{LangChain chains:} DAGs (directed acyclic graphs) — no loops allowed
   \item \textbf{LangGraph:} Allows cycles — nodes can route back to earlier nodes
   \item \textbf{Loops enable:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Iterative reasoning: "think -> act -> observe -> think again"
       \item ReAct pattern: think, act, reflect, repeat
       \item Error recovery: try -> fail -> retry
@@ -395,6 +410,7 @@ Always ensure your routing logic has an exit condition, or set a max recursion d
 \begin{frame}[fragile]
 \frametitle{Checkpointing: Saving and Restoring Graph State}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Checkpointing:} Saving state after each node executes
   \item \textbf{MemorySaver:} In-memory checkpoint storage (for development)
 \end{itemize}
@@ -419,6 +435,7 @@ result = compiled.invoke(
 \vspace{10pt}
 \textbf{Benefits:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Resume execution from last checkpoint
   \item Inspect state at any step
   \item Implement human-in-the-loop workflows
@@ -452,6 +469,7 @@ compiled = graph.compile(checkpointer=checkpointer)
 \vspace{10pt}
 \textbf{Key points:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item SQLite: Good for single-machine, development
   \item PostgreSQL: For distributed, production systems
   \item Config: Always use \texttt{config=\{"configurable": \{"thread\_id": id\}\}}
@@ -480,6 +498,7 @@ compiled = graph.compile(
 \vspace{10pt}
 \textbf{Workflow:}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item Call \texttt{invoke()} or \texttt{stream()} — execution pauses at interrupt point
   \item Check state: \texttt{compiled.get\_state(config)}
   \item Inspect results, let human decide
@@ -526,6 +545,7 @@ result = compiled.invoke(updated_state, config)
 \begin{frame}[fragile]
 \frametitle{Streaming Graph Execution: stream() and astream\_events()}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \texttt{invoke()}: Returns final state only
   \item \texttt{stream()}: Yields state after each node (useful for long operations)
   \item \texttt{astream\_events()}: Async stream of intermediate events (for real-time updates)
@@ -551,6 +571,7 @@ async for event in compiled.astream_events(input, config):
 \begin{frame}[fragile]
 \frametitle{Subgraphs: Composing Graphs Within Graphs}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Subgraph:} A compiled graph used as a node in another graph
   \item Enables modular, reusable agent components
   \item Subgraph state must align with parent state (or use adapters)
@@ -580,6 +601,7 @@ compiled = parent_graph.compile()
 \begin{frame}[fragile]
 \frametitle{Dynamic Graph Modification at Runtime}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Note:} LangGraph graphs are typically compiled once
   \item For true dynamic routing, use conditional\_edges with complex logic
   \item \texttt{dspy}, \texttt{guidance}, or similar tools can modify prompts dynamically
@@ -610,6 +632,7 @@ graph.add_conditional_edges("think", dynamic_router, {...})
 \begin{frame}[fragile]
 \frametitle{Map-Reduce Patterns in LangGraph}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Map:} Process multiple items in parallel (e.g., analyze documents)
   \item \textbf{Reduce:} Aggregate results (e.g., summarize)
   \item LangGraph supports concurrent node execution via state + conditional edges
@@ -689,6 +712,7 @@ print("Edges:", graph_obj.edges)
 \vspace{10pt}
 \textbf{Debugging techniques:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Use \texttt{stream()} to watch state evolution
   \item Add print statements in nodes
   \item Use \texttt{get\_state()} to inspect at interrupts
@@ -795,6 +819,7 @@ def synthesize(state: CollabState) -> dict:
 \begin{frame}
 \frametitle{Performance Considerations}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{State size:} Keep state lean; avoid storing large objects (use references)
   \item \textbf{Checkpoint overhead:} Checkpointing after each node has cost; use in-memory for dev, persistent for prod
   \item \textbf{Streaming vs invoke:} Streaming is better for long runs; invoke waits for completion
@@ -854,6 +879,7 @@ graph.add_edge("process", END)
 \vspace{10pt}
 \textbf{Checklist:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item START has at least one outgoing edge
   \item Every non-END node has at least one outgoing edge
   \item Every node is reachable from START
@@ -1005,6 +1031,7 @@ result = compiled.invoke({"input": "..."})
 \vspace{10pt}
 \textbf{When to use:}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Chain:} Simple linear pipelines
   \item \textbf{LangGraph:} Complex, looping, interactive agents
 \end{itemize}
@@ -1107,6 +1134,7 @@ def test_conditional_routing():
 \begin{frame}
 \frametitle{Production Deployment Considerations}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Checkpointing:} Use PostgreSQL or SQLite in production, not MemorySaver
   \item \textbf{Monitoring:} Log node execution times, errors, and state transitions
   \item \textbf{Versioning:} Version your graph definitions for reproducibility
@@ -1127,6 +1155,7 @@ def test_conditional_routing():
 \begin{frame}
 \frametitle{Self-Check Questions (1/2)}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item What is the key difference between LangChain chains and LangGraph?
   \item How is state represented in LangGraph? What's the modern pattern?
   \item Explain the relationship between nodes, edges, and state.
@@ -1143,6 +1172,7 @@ def test_conditional_routing():
 \begin{frame}
 \frametitle{Self-Check Questions (2/2)}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \setcounter{enumi}{7}
   \item What's the difference between \texttt{invoke()}, \texttt{stream()}, and \texttt{astream\_events()}?
   \item How would you implement the ReAct (Reasoning + Acting) pattern as a LangGraph?
@@ -1159,6 +1189,7 @@ def test_conditional_routing():
 \begin{frame}
 \frametitle{Summary: LangGraph Fundamentals}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{LangGraph:} Graph-based orchestration for stateful, looping agents
   \item \textbf{Core components:} StateGraph, nodes, edges, START/END
   \item \textbf{State:} Shared dict passed and merged through nodes
@@ -1191,6 +1222,7 @@ Powerful, looping, interactive agents
 \vspace{20pt}
 \textbf{Three Rules}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item Define state as TypedDict
   \item Nodes return dicts (merge, don't replace)
   \item Conditional routing enables loops
@@ -1207,6 +1239,7 @@ Powerful, looping, interactive agents
 \begin{frame}
 \frametitle{Additional Resources}
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{LangGraph Docs:} \url{https://langgraph.dev}
   \item \textbf{StateGraph API:} TypedDict-based state definitions
   \item \textbf{Checkpointing:} MemorySaver, SqliteSaver, PostgresSaver

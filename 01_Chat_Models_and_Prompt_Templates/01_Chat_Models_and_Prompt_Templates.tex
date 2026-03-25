@@ -19,10 +19,10 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
 
 \lstset{
   basicstyle=\ttfamily\scriptsize,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -60,6 +62,7 @@
 % OUTLINE
 % ============================================================================
 \begin{frame}{What We'll Cover}
+  \footnotesize
   \tableofcontents
 \end{frame}
 
@@ -70,7 +73,7 @@
 
 \begin{frame}{LangChain Pipeline Overview}
   \begin{center}
-    \begin{tikzpicture}[node distance=2cm, auto]
+    \begin{tikzpicture}[node distance=1.2cm, auto]
       % Nodes
       \node[draw, rectangle, fill=yellow!30] (input) {User Input};
       \node[draw, rectangle, fill=lcorange!30, right of=input] (prompt) {Prompt Template};
@@ -105,6 +108,7 @@
   \end{conceptbox}
 
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{HumanMessage}: User input
     \item \textbf{AIMessage}: Model responses
     \item \textbf{SystemMessage}: Instructions/context for the model
@@ -130,7 +134,7 @@ messages = [msg1, msg2]
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Convention]
     Always wrap user input in \texttt{HumanMessage}. This makes intent explicit.
   \end{tipbox}
@@ -156,7 +160,7 @@ messages = [sys, HumanMessage(...), tool_result]
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{warningbox}[Message Order]
     SystemMessage should come \textbf{first} in most cases. Models expect this order.
   \end{warningbox}
@@ -173,6 +177,7 @@ messages = [sys, HumanMessage(...), tool_result]
   \end{conceptbox}
 
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{invoke()}: Single request, wait for response
     \item \textbf{batch()}: Multiple requests at once
     \item \textbf{stream()}: Real-time token streaming
@@ -200,7 +205,7 @@ print(response.content)  # "Hello! How can I help?"
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Note]
     \texttt{invoke()} blocks until the model responds. Use for simple scripts.
   \end{tipbox}
@@ -223,7 +228,7 @@ for resp in responses:
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Efficiency]
     \texttt{batch()} is faster than sequential \texttt{invoke()} calls.
   \end{tipbox}
@@ -341,7 +346,7 @@ response = model.invoke([HumanMessage(...)])
   \docref{Chat Model Parameters}
 \end{frame}
 
-\begin{frame}[fragile]{Temperature \& max\_tokens}
+\begin{frame}[fragile,shrink=5]{Temperature \& max\_tokens}
   \begin{codebox}[Common Parameters]
     \begin{lstlisting}
 from langchain_openai import ChatOpenAI
@@ -361,10 +366,9 @@ model_creative = ChatOpenAI(
 )
     \end{lstlisting}
   \end{codebox}
-
-  \vspace{0.5cm}
+  \vspace{-0.1cm}
   \begin{warningbox}[Token Budget]
-    \texttt{max\_tokens} includes output only. Ensure input + max\_tokens fits model limit.
+    \texttt{max\_tokens} is output-only. Check: input + output < model limit.
   \end{warningbox}
 \end{frame}
 
@@ -387,7 +391,7 @@ model = ChatOpenAI(
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Production Ready]
     Use \texttt{stop} sequences to enforce format (e.g., single response per call).
   \end{tipbox}
@@ -404,13 +408,14 @@ model = ChatOpenAI(
   \end{conceptbox}
 
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Safety}: Variable escaping built-in
     \item \textbf{Reuse}: Same template, different inputs
     \item \textbf{Composition}: Combine templates
     \item \textbf{Clarity}: Intent is explicit
   \end{itemize}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \textbf{Question}: Why not just use f-strings?
 
   \textbf{Answer}: No validation, no composition, easier to mess up.
@@ -464,7 +469,7 @@ prompt = partial_template.format(task="explain ML")
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Pattern]
     Use \texttt{partial()} to build specialized templates from general ones.
   \end{tipbox}
@@ -481,11 +486,12 @@ prompt = partial_template.format(task="explain ML")
   \end{conceptbox}
 
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{PromptTemplate}: Outputs a string (for generic text models)
     \item \textbf{ChatPromptTemplate}: Outputs a list of messages (for chat models)
   \end{itemize}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   Most modern work uses \textbf{ChatPromptTemplate}.
 
   \docref{langchain.prompts.ChatPromptTemplate}
@@ -518,31 +524,28 @@ response = model.invoke(messages)
 
 \begin{frame}[fragile]{MessagesPlaceholder for History}
   \begin{codebox}[Multi-turn Conversations]
-    \begin{lstlisting}
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import HumanMessage, AIMessage
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
+from langchain.prompts import (
+    ChatPromptTemplate, MessagesPlaceholder)
 
 template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant."),
+    ("system", "You are helpful."),
     MessagesPlaceholder(variable_name="history"),
     ("user", "{user_input}")
 ])
 
-# Build conversation history
 history = [
     HumanMessage(content="What is AI?"),
-    AIMessage(content="AI is...")
-]
+    AIMessage(content="AI is...")]
 
 messages = template.format_messages(
     history=history,
-    user_input="Tell me more."
-)
+    user_input="Tell me more.")
     \end{lstlisting}
   \end{codebox}
 
   \begin{tipbox}[Key Pattern]
-    \texttt{MessagesPlaceholder} inserts existing messages into template.
+    \texttt{MessagesPlaceholder} inserts existing messages.
   \end{tipbox}
 \end{frame}
 
@@ -553,28 +556,19 @@ messages = template.format_messages(
 
 \begin{frame}[fragile]{Few-Shot with Examples}
   \begin{codebox}[Examples Improve Performance]
-    \begin{lstlisting}
-from langchain.prompts import FewShotPromptTemplate, PromptTemplate
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
+from langchain.prompts import (
+    FewShotPromptTemplate)
 
-# Define examples
-examples = [
-    {"word": "happy", "antonym": "sad"},
-    {"word": "big", "antonym": "small"},
-]
+examples = [{"word": "happy", "antonym": "sad"}]
 
-# Create example template
-example_template = PromptTemplate(
-    template="Word: {word}\nAntonym: {antonym}",
-    input_variables=["word", "antonym"]
-)
+template = PromptTemplate(
+    template="Word: {word}. Antonym: {antonym}",
+    input_variables=["word", "antonym"])
 
-# Build few-shot prompt
 prompt = FewShotPromptTemplate(
     examples=examples,
-    example_prompt=example_template,
-    suffix="Word: {input}\nAntonym:",
-    input_variables=["input"]
-)
+    example_prompt=template)
     \end{lstlisting}
   \end{codebox}
 
@@ -584,33 +578,38 @@ prompt = FewShotPromptTemplate(
 \begin{frame}[fragile]{Few-Shot Chat Messages}
   \begin{codebox}[Few-Shot for Chat Models]
     \begin{lstlisting}
-from langchain.prompts import FewShotChatMessagePromptTemplate, ChatPromptTemplate
+from langchain.prompts import (
+    FewShotChatMessagePromptTemplate,
+    ChatPromptTemplate)
 
 examples = [
-    {"input": "happy", "output": "sad"},
-    {"input": "big", "output": "small"},
-]
+    {"input": "happy", "output": "sad"}]
 
-example_prompt = ChatPromptTemplate.from_messages([
-    ("user", "Word: {input}"),
-    ("assistant", "Antonym: {output}")
-])
+example_prompt = (
+    ChatPromptTemplate.from_messages([
+        ("user", "Word: {input}"),
+        ("assistant", "Antonym: {output}")]))
 
-few_shot_prompt = FewShotChatMessagePromptTemplate(
+few_shot = FewShotChatMessagePromptTemplate(
     examples=examples,
-    example_prompt=example_prompt
-)
+    example_prompt=example_prompt)
+    \end{lstlisting}
+  \end{codebox}
+\end{frame}
 
-final_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You find antonyms."),
-    few_shot_prompt,
+\begin{frame}[fragile]{Few-Shot Chat: Final Prompt}
+  \begin{codebox}[Composing with System]
+    \begin{lstlisting}
+final = ChatPromptTemplate.from_messages([
+    ("system", "Find antonyms."),
+    few_shot,
     ("user", "Word: {word}")
 ])
     \end{lstlisting}
   \end{codebox}
 
   \begin{tipbox}[When to Use]
-    Few-shot helps with task-specific behavior. 3-5 examples often sufficient.
+    Few-shot improves task-specific behavior. 3-5 examples often sufficient.
   \end{tipbox}
 \end{frame}
 
@@ -639,7 +638,7 @@ response = model.invoke(messages)
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{warningbox}[System Message Placement]
     \textbf{Always} include SystemMessage first. Skipping it changes model behavior.
   \end{warningbox}
@@ -648,27 +647,18 @@ response = model.invoke(messages)
 \begin{frame}[fragile]{Persona Patterns}
   \begin{codebox}[Detailed Personas]
     \begin{lstlisting}
-system_prompt = """
-You are a professional code reviewer. Your role:
-1. Check code for bugs and security issues
-2. Suggest performance improvements
-3. Explain your reasoning clearly
-4. Use professional language
+system_prompt = """You are a code reviewer.
+Check for: bugs, security, performance.
+Provide: issue, severity, fix."""
 
-When reviewing, always provide:
-- Issue: description
-- Severity: low/medium/high
-- Fix: code or approach
-"""
-
-template = ChatPromptTemplate.from_messages([
-    ("system", system_prompt),
-    ("user", "Review this code: {code}")
-])
+template = (
+    ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("user", "Review: {code}")
+    ]))
     \end{lstlisting}
   \end{codebox}
 
-  \vspace{0.5cm}
   \begin{tipbox}[Persona Clarity]
     Detailed personas reduce hallucination and improve consistency.
   \end{tipbox}
@@ -679,7 +669,7 @@ template = ChatPromptTemplate.from_messages([
 % ============================================================================
 \section{Prompt Composition \& Reuse}
 
-\begin{frame}[fragile]{Composing Templates}
+\begin{frame}[fragile,shrink=8]{Composing Templates}
   \begin{codebox}[Build Complex Prompts from Simple Ones]
     \begin{lstlisting}
 from langchain.prompts import ChatPromptTemplate
@@ -702,29 +692,36 @@ combined = ChatPromptTemplate.from_messages([
 messages = system.messages + user_template.messages
     \end{lstlisting}
   \end{codebox}
-
-  \docref{ChatPromptTemplate composition}
+  \vspace{-0.1cm}
+  \docref{Composition patterns}
 \end{frame}
 
 \begin{frame}[fragile]{Reusable Template Library}
-  \begin{codebox}[Reusable Templates]
+  \begin{codebox}[Template Constants]
     \begin{lstlisting}
-# Create reusable templates
-CODE_REVIEW_TEMPLATE = ChatPromptTemplate.from_messages([
-    ("system", "You review code. Be thorough."),
-    ("user", "{code}")
-])
+CODE_REVIEW_TEMPLATE = (
+    ChatPromptTemplate.from_messages([
+        ("system", "Review code. Be thorough."),
+        ("user", "{code}")
+    ]))
 
-SUMMARY_TEMPLATE = ChatPromptTemplate.from_messages([
-    ("system", "You summarize text concisely."),
-    ("user", "{text}")
-])
+SUMMARY_TEMPLATE = (
+    ChatPromptTemplate.from_messages([
+        ("system", "Summarize concisely."),
+        ("user", "{text}")
+    ]))
+    \end{lstlisting}
+  \end{codebox}
+\end{frame}
 
-# Use in different chains
+\begin{frame}[fragile]{Using Templates in Chains}
+  \begin{codebox}[Composition Patterns]
+    \begin{lstlisting}
+# Use templates in chains
 chain1 = CODE_REVIEW_TEMPLATE | model
 chain2 = SUMMARY_TEMPLATE | model
 
-# Or parameterize
+# Parameterize for flexibility
 def create_template(role, task):
     return ChatPromptTemplate.from_messages([
         ("system", f"You are {role}. {task}"),
@@ -734,7 +731,7 @@ def create_template(role, task):
   \end{codebox}
 
   \begin{tipbox}[Modularity]
-    Store templates in a separate module for team consistency.
+    Store in separate module for consistency.
   \end{tipbox}
 \end{frame}
 
@@ -794,7 +791,7 @@ asyncio.run(stream_response())
 % ============================================================================
 \section{Async Usage Patterns}
 
-\begin{frame}[fragile]{ainvoke() - Async Single Request}
+\begin{frame}[fragile,shrink=5]{ainvoke() - Async Single Request}
   \begin{codebox}[Non-Blocking Calls]
     \begin{lstlisting}
 import asyncio
@@ -814,31 +811,26 @@ async def main():
 asyncio.run(main())
     \end{lstlisting}
   \end{codebox}
-
+  \vspace{-0.1cm}
   \begin{tipbox}[When to Use]
-    Use async for web apps, concurrent processing, or integrations.
+    Use async for web apps or concurrent processing.
   \end{tipbox}
 \end{frame}
 
 \begin{frame}[fragile]{abatch() - Parallel Processing}
   \begin{codebox}[Concurrent Batch Processing]
-    \begin{lstlisting}
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 import asyncio
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage
 
 async def main():
     model = ChatOpenAI(model="gpt-4")
-
-    # Process multiple in parallel
     messages = [
         [HumanMessage(content="What is AI?")],
         [HumanMessage(content="What is ML?")],
-        [HumanMessage(content="What is DL?")]
-    ]
-
+        [HumanMessage(content="What is DL?")]]
     responses = await model.abatch(messages)
-
     for resp in responses:
         print(resp.content)
 
@@ -847,7 +839,7 @@ asyncio.run(main())
   \end{codebox}
 
   \begin{tipbox}[Parallelism]
-    \texttt{abatch()} is much faster than sequential \texttt{ainvoke()} calls.
+    Much faster than sequential \texttt{ainvoke()}.
   \end{tipbox}
 \end{frame}
 
@@ -862,6 +854,7 @@ asyncio.run(main())
   \end{conceptbox}
 
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{RateLimitError}: Too many requests
     \item \textbf{AuthenticationError}: Bad API key
     \item \textbf{APIConnectionError}: Network issue
@@ -874,54 +867,47 @@ asyncio.run(main())
 
 \begin{frame}[fragile]{Handling Rate Limits}
   \begin{codebox}[Graceful Retry]
-    \begin{lstlisting}
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 import time
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage
 from openai import RateLimitError
-
-model = ChatOpenAI(model="gpt-4")
 
 def call_with_retry(messages, max_retries=3):
     for attempt in range(max_retries):
         try:
-            return model.invoke(messages)
-        except RateLimitError as e:
+            return ChatOpenAI().invoke(messages)
+        except RateLimitError:
             if attempt < max_retries - 1:
-                wait = 2 ** attempt  # exponential backoff
-                print(f"Rate limited. Waiting {wait}s...")
+                wait = 2 ** attempt
                 time.sleep(wait)
             else:
                 raise
     \end{lstlisting}
   \end{codebox}
-
+  \vspace{-0.2cm}
   \begin{tipbox}[Best Practice]
-    Use exponential backoff for retries. Don't hammer the API.
+    Exponential backoff: don't hammer API.
   \end{tipbox}
 \end{frame}
 
 \begin{frame}[fragile]{Handling Timeouts}
   \begin{codebox}[Request Timeout]
-    \begin{lstlisting}
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage
 from openai import APITimeoutError
 
 model = ChatOpenAI(
     model="gpt-4",
-    request_timeout=30  # 30 seconds
-)
+    request_timeout=30)
 
 try:
-    response = model.invoke([HumanMessage(...)])
+    response = model.invoke([msg])
 except APITimeoutError:
-    print("Request timed out. Try again or use shorter prompt.")
-    # Handle gracefully: return default, retry, or fail cleanly
+    print("Timeout. Retry or use shorter prompt.")
     \end{lstlisting}
   \end{codebox}
 
-  \docref{request\_timeout parameter}
+  \docref{request\_timeout}
 \end{frame}
 
 % ============================================================================
@@ -935,6 +921,7 @@ except APITimeoutError:
   \end{warningbox}
 
   \begin{enumerate}
+    \setlength{\itemsep}{1pt}
     \item Using plain strings instead of Message objects
     \item Forgetting SystemMessage
     \item Not handling token limits
@@ -956,7 +943,7 @@ response = model.invoke([HumanMessage(content="What is AI?")])
     \end{lstlisting}
   \end{warningbox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \textbf{Why?} Messages are typed, composable, and enable tool use.
 \end{frame}
 
@@ -975,7 +962,7 @@ messages = [
     \end{lstlisting}
   \end{warningbox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \textbf{Impact}: System prompts dramatically improve output quality.
 \end{frame}
 
@@ -1019,7 +1006,7 @@ model = ChatOpenAI(model="gpt-4")
     \end{lstlisting}
   \end{warningbox}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{warningbox}[Rule]
     Never commit API keys. Use environment variables only.
   \end{warningbox}
@@ -1036,6 +1023,7 @@ model = ChatOpenAI(model="gpt-4")
   \end{conceptbox}
 
   \begin{enumerate}
+    \setlength{\itemsep}{1pt}
     \item Messages (Human, AI, System, Tool) are the foundation
     \item Chat models use invoke/batch/stream interface
     \item Prompt templates are reusable and composable
@@ -1045,7 +1033,7 @@ model = ChatOpenAI(model="gpt-4")
     \item Test with streaming before production
   \end{enumerate}
 
-  \vspace{1cm}
+  \vspace{0.4cm}
   \begin{tipbox}[Next Steps]
     Section 02 builds on this: Chains, LCEL, and automation patterns.
   \end{tipbox}
@@ -1058,13 +1046,11 @@ model = ChatOpenAI(model="gpt-4")
 
 \begin{frame}[fragile]{Most-Used API Calls}
   \begin{codebox}[Copy-Paste Ready]
-    \begin{lstlisting}
-# Import
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain.schema import HumanMessage
 from langchain.prompts import ChatPromptTemplate
 
-# Model setup
 model = ChatOpenAI(model="gpt-4")
 
 # Simple call
@@ -1078,10 +1064,8 @@ template = ChatPromptTemplate.from_messages([
 messages = template.format_messages(input="Hi")
 resp = model.invoke(messages)
 
-# Batch
-responses = model.batch([msg1, msg2, msg3])
-
-# Stream
+# Batch / Stream
+responses = model.batch([msg1, msg2])
 for chunk in model.stream([HumanMessage(...)]):
     print(chunk.content, end="")
     \end{lstlisting}
@@ -1089,25 +1073,25 @@ for chunk in model.stream([HumanMessage(...)]):
 \end{frame}
 
 \begin{frame}{Cheat Sheet: Parameters}
-  \begin{small}
-    \begin{center}
-      \begin{tabular}{lll}
-        \toprule
-        \textbf{Parameter} & \textbf{Range} & \textbf{Use Case} \\
-        \midrule
-        temperature & 0.0-2.0 & 0 = task, 1.0 = balanced, 1.5+ = creative \\
-        max\_tokens & 1-4096 & Output length (check model limit) \\
-        top\_p & 0.0-1.0 & 0.9 = nucleus, 1.0 = all tokens \\
-        model & - & gpt-4, gpt-3.5-turbo, claude-3.5-sonnet \\
-        stop & strings & Sequences to halt generation \\
-        \bottomrule
-      \end{tabular}
-    \end{center}
-  \end{small}
+  \begin{footnotesize}
+    \renewcommand{\arraystretch}{1.05}
+    \centering
+    \begin{tabular}{lp{5cm}}
+      \toprule
+      \textbf{Param} & \textbf{Use} \\
+      \midrule
+      temperature & 0 = task, 1.0 = balanced, 1.5+ = creative \\
+      max\_tokens & output length limit \\
+      top\_p & nucleus sampling (0-1) \\
+      model & which LLM to use \\
+      stop & halt generation strings \\
+      \bottomrule
+    \end{tabular}
+  \end{footnotesize}
 
-  \vspace{1cm}
-  \begin{tipbox}[Default Values]
-    Defaults are usually safe. Tweak only if needed.
+  \vspace{0.1cm}
+  \begin{tipbox}[Defaults]
+    Safe by default. Adjust only when needed.
   \end{tipbox}
 \end{frame}
 
@@ -1118,6 +1102,7 @@ for chunk in model.stream([HumanMessage(...)]):
 
 \begin{frame}{Questions to Test Understanding}
   \begin{enumerate}
+    \setlength{\itemsep}{1pt}
     \item What are the four message types in LangChain? When do you use each?
     \item Why use PromptTemplate instead of f-strings?
     \item What's the difference between invoke(), batch(), and stream()?
@@ -1125,7 +1110,7 @@ for chunk in model.stream([HumanMessage(...)]):
     \item What does \texttt{MessagesPlaceholder} do?
   \end{enumerate}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \begin{tipbox}[Self-Assessment]
     If you can't answer these, review relevant sections above.
   \end{tipbox}
@@ -1133,6 +1118,7 @@ for chunk in model.stream([HumanMessage(...)]):
 
 \begin{frame}{More Questions}
   \begin{enumerate}
+    \setlength{\itemsep}{1pt}
     \setcounter{enumi}{5}
     \item How do you build a multi-turn conversation with ChatPromptTemplate?
     \item What's exponential backoff and why use it?
@@ -1140,7 +1126,7 @@ for chunk in model.stream([HumanMessage(...)]):
     \item When should you use async (ainvoke, abatch, astream)?
   \end{enumerate}
 
-  \vspace{1cm}
+  \vspace{0.4cm}
   \begin{conceptbox}[Ready?]
     If all questions are clear, you're ready for Section 02: Chains \& LCEL.
   \end{conceptbox}

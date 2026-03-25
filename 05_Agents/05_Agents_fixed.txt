@@ -19,10 +19,10 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
 
 \lstset{
   basicstyle=\ttfamily\scriptsize,
@@ -38,8 +38,6 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
-  aboveskip=2pt,
-  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -70,7 +68,7 @@ An \textbf{agent} is an LLM that:
   \item Repeats until it has an answer
 \end{enumerate}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 Unlike chains (linear), agents are \textbf{dynamic}:
 \begin{itemize}
@@ -78,7 +76,7 @@ Unlike chains (linear), agents are \textbf{dynamic}:
   \item Agent: ``Analyze the query, then decide what tools I need''
 \end{itemize}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \begin{conceptbox}[Key Insight]
 Agents are control flow determined by the LLM, not by you.
@@ -94,7 +92,7 @@ Agents are control flow determined by the LLM, not by you.
 
 \textbf{Definition:} An agent is a system that:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{enumerate}
   \item Takes a user query or goal as input
@@ -105,7 +103,7 @@ Agents are control flow determined by the LLM, not by you.
   \item Returns a final answer to the user
 \end{enumerate}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{In LangChain v1.x:}
 \begin{itemize}
@@ -127,7 +125,7 @@ Agents are control flow determined by the LLM, not by you.
 
 \textbf{ReAct} = \textbf{Re}asoning + \textbf{Act}ing
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \begin{center}
 \begin{tabular}{ll}
@@ -144,7 +142,7 @@ Think & LLM sees results, decides next step \\
 \end{tabular}
 \end{center}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Advantages:}
 \begin{itemize}
@@ -195,7 +193,7 @@ Think & LLM sees results, decides next step \\
 \end{tikzpicture}
 \end{center}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 The agent iterates through Think → Act → Observe until it decides it's done.
 
@@ -217,7 +215,7 @@ The agent iterates through Think → Act → Observe until it decides it's done.
   \item Example: calculator + web search
 \end{itemize}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Use when:}
 \begin{itemize}
@@ -234,7 +232,7 @@ The agent iterates through Think → Act → Observe until it decides it's done.
   \item Example: plugin-based system
 \end{itemize}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Use when:}
 \begin{itemize}
@@ -243,7 +241,7 @@ The agent iterates through Think → Act → Observe until it decides it's done.
 \end{itemize}
 \end{columns}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \begin{tipbox}[LangChain v1.2.x]
 \texttt{create\_react\_agent()} supports both—pass tools at initialization.
@@ -254,7 +252,7 @@ The agent iterates through Think → Act → Observe until it decides it's done.
 % ============================================================
 % SLIDE 7: create_react_agent() Constructor
 % ============================================================
-\begin{frame}[fragile,shrink=5]
+\begin{frame}[fragile]
 \frametitle{create\_react\_agent() — The Main Constructor}
 
 \begin{lstlisting}
@@ -279,7 +277,7 @@ agent = create_react_agent(
 )
 \end{lstlisting}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{What you get:} A \texttt{CompiledGraph} (LangGraph runnable)
 
@@ -308,7 +306,7 @@ print(result["output"])
 # Output: The answer is 50.
 \end{lstlisting}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Key points:}
 \begin{itemize}
@@ -325,7 +323,7 @@ print(result["output"])
 % ============================================================
 % SLIDE 9: Complete Working Example
 % ============================================================
-\begin{frame}[fragile,shrink=15]
+\begin{frame}[fragile]
 \frametitle{Complete Working Example: ReAct Agent}
 
 \begin{lstlisting}
@@ -367,7 +365,7 @@ print(result["output"])
 
 The agent maintains a \textbf{message history}:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{itemize}
   \item \textbf{User message:} Your question
@@ -378,7 +376,7 @@ The agent maintains a \textbf{message history}:
   \item \textbf{Final AI message:} The answer
 \end{itemize}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Access state:}
 
@@ -399,12 +397,12 @@ for step in intermediate:
 % ============================================================
 % SLIDE 11: Streaming Agent Output
 % ============================================================
-\begin{frame}[fragile,shrink=8]
+\begin{frame}[fragile]
 \frametitle{Streaming Agent Output with astream\_events()}
 
 Stream events as the agent thinks and acts:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{lstlisting}
 async def stream_agent_output():
@@ -427,7 +425,7 @@ import asyncio
 asyncio.run(stream_agent_output())
 \end{lstlisting}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Use for:} Real-time UI updates, monitoring long-running agents
 
@@ -443,7 +441,7 @@ asyncio.run(stream_agent_output())
 
 Pause agent execution to ask for approval:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{lstlisting}
 # Configure to interrupt before tool calls
@@ -464,7 +462,7 @@ for event in agent_with_tools.stream(state):
             break
 \end{lstlisting}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Use for:} Sensitive operations, safety-critical systems, user control
 
@@ -473,12 +471,12 @@ for event in agent_with_tools.stream(state):
 % ============================================================
 % SLIDE 13: Agent with Structured Output
 % ============================================================
-\begin{frame}[fragile,shrink=18]
+\begin{frame}[fragile]
 \frametitle{Agent with Structured Output}
 
 Force agent to return structured output using tool schemas:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{lstlisting}
 from pydantic import BaseModel
@@ -513,7 +511,7 @@ print(plan.steps)
 % ============================================================
 % SLIDE 14: Multi-Tool Agents with Complex Reasoning
 % ============================================================
-\begin{frame}[fragile,shrink=15]
+\begin{frame}[fragile]
 \frametitle{Multi-Tool Agents with Complex Reasoning}
 
 \begin{lstlisting}
@@ -585,7 +583,7 @@ executor = AgentExecutor(
 % ============================================================
 % SLIDE 16: Error Handling in Agents
 % ============================================================
-\begin{frame}[fragile,shrink=20]
+\begin{frame}[fragile]
 \frametitle{Error Handling in Agents}
 
 \textbf{Handle tool failures gracefully:}
@@ -642,7 +640,7 @@ result = executor.invoke({"input": "What is 2 + 2?"})
 # View traces at https://smith.langchain.com
 \end{lstlisting}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{LangSmith shows:}
 \begin{itemize}
@@ -660,7 +658,7 @@ result = executor.invoke({"input": "What is 2 + 2?"})
 % ============================================================
 % SLIDE 18: Agents vs Chains
 % ============================================================
-\begin{frame}[shrink=6]
+\begin{frame}
 \frametitle{When to Use Agents vs Chains}
 
 \begin{center}
@@ -678,7 +676,7 @@ Debugging & Easier & Harder \\
 \end{tabular}
 \end{center}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Use Chains when:}
 \begin{itemize}
@@ -699,7 +697,7 @@ Debugging & Easier & Harder \\
 % ============================================================
 % SLIDE 19: Common Pitfalls
 % ============================================================
-\begin{frame}[shrink=5]
+\begin{frame}
 \frametitle{Common Pitfalls and How to Avoid Them}
 
 \begin{warningbox}[Pitfall 1: Infinite Loops]
@@ -731,7 +729,7 @@ Agent uses too many tokens and context window fills up.
 % ============================================================
 % SLIDE 20: Production-Ready Agent Pattern
 % ============================================================
-\begin{frame}[fragile,shrink=18]
+\begin{frame}[fragile]
 \frametitle{Production-Ready Agent Pattern}
 
 A robust pattern for production systems:
@@ -841,7 +839,7 @@ result = executor.invoke(
 
 \textbf{Idea:} Use agents as tools for other agents.
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \begin{center}
 \begin{tikzpicture}[scale=0.85]
@@ -857,7 +855,7 @@ result = executor.invoke(
 \end{tikzpicture}
 \end{center}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Benefits:}
 \begin{itemize}
@@ -866,7 +864,7 @@ result = executor.invoke(
   \item Debuggable: trace each sub-agent
 \end{itemize}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{lstlisting}
 @tool
@@ -884,7 +882,7 @@ main_agent = create_react_agent(llm, tools)
 % ============================================================
 % SLIDE 24: Memory in Agents
 % ============================================================
-\begin{frame}[fragile,shrink=6]
+\begin{frame}[fragile]
 \frametitle{Memory in Agents}
 
 Agents have implicit memory via message history:
@@ -922,7 +920,7 @@ agent.with_message_history(history).invoke(...)
 % ============================================================
 % SLIDE 25: Tool Validation and Schemas
 % ============================================================
-\begin{frame}[fragile,shrink=10]
+\begin{frame}[fragile]
 \frametitle{Tool Validation and Schemas}
 
 Define strict schemas for tools:
@@ -959,7 +957,7 @@ executor.invoke({"input": "Search for cats with 5 results"})
 % ============================================================
 % SLIDE 26: Tool Error Recovery
 % ============================================================
-\begin{frame}[fragile,shrink=5]
+\begin{frame}[fragile]
 \frametitle{Tool Error Recovery}
 
 Handle tool failures and let agent retry:
@@ -999,7 +997,7 @@ result = executor.invoke({"input": "Call API"})
 
 Key metrics to track in production:
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \begin{itemize}
   \item \textbf{Success rate:} \% of queries answered correctly
@@ -1011,7 +1009,7 @@ Key metrics to track in production:
   \item \textbf{Error rate:} \% of runs with errors
 \end{itemize}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Tools:}
 \begin{itemize}
@@ -1131,7 +1129,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item \texttt{create\_react\_agent()} builds agents on LangGraph
 \end{enumerate}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Implementation:}
 \begin{enumerate}
@@ -1140,7 +1138,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Run via \texttt{AgentExecutor.invoke()} or stream
 \end{enumerate}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Production Readiness:}
 \begin{enumerate}
@@ -1149,7 +1147,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Test agents thoroughly (infinite loops, edge cases)
 \end{enumerate}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{When to use agents:} Problems requiring reasoning and dynamic tool selection.
 
@@ -1163,31 +1161,31 @@ AgentExecutor(agent=agent, tools=tools,
 
 \textbf{Question 1:} What is the core difference between a chain and an agent?
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 2:} Describe the ReAct pattern in one sentence.
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 3:} What does \texttt{create\_react\_agent()} return?
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 4:} Why is a good tool description important?
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 5:} Name 3 common pitfalls when building agents.
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 6:} How do you enable tracing for debugging?
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 7:} What is the purpose of \texttt{max\_iterations} in AgentExecutor?
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Question 8:} When would you choose an agent over a chain?
 
@@ -1196,7 +1194,7 @@ AgentExecutor(agent=agent, tools=tools,
 % ============================================================
 % SLIDE 33: Suggested Answers
 % ============================================================
-\begin{frame}[shrink=6]
+\begin{frame}
 \frametitle{Suggested Answers}
 
 \textbf{Q1:} Chains have fixed, linear flow. Agents use LLM to decide tool sequence dynamically.
@@ -1244,7 +1242,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Tool integration examples
 \end{itemize}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Recommended Patterns:}
 \begin{itemize}
@@ -1253,7 +1251,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Structured output agents
 \end{itemize}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \textbf{Debugging Tools:}
 \begin{itemize}
@@ -1262,7 +1260,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Callback handlers for custom logging
 \end{itemize}
 
-\vspace{0.15cm}
+\vspace{0.3cm}
 
 \docref{langchain.agents, LangGraph, LangSmith}
 
@@ -1282,7 +1280,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Deploy agents safely to production
 \end{enumerate}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Practice exercise:}
 \begin{enumerate}
@@ -1296,7 +1294,7 @@ AgentExecutor(agent=agent, tools=tools,
   \item Trace the agent execution with LangSmith
 \end{enumerate}
 
-\vspace{0.25cm}
+\vspace{0.5cm}
 
 \textbf{Section 06 preview:} Multi-agent systems and LangGraph state machines.
 

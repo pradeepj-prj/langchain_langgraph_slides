@@ -19,9 +19,9 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
 
@@ -37,6 +37,7 @@
 
 \begin{frame}{Agenda}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item RAG Mental Model: Giving LLMs access to your data
     \item RAG Fundamentals: Definition, motivation, pipeline
     \item Building RAG with LCEL: Complete working examples
@@ -53,12 +54,13 @@
     RAG gives LLMs access to external knowledge without retraining.
     Think: ``LLM + Search + Context Injection''
   \end{conceptbox}
-  \vspace{0.5cm}
+  \vspace{0.08cm}
 
   \begin{columns}[T]
     \column{0.48\textwidth}
     \textbf{Without RAG:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item LLM knowledge frozen at training time
       \item Cannot answer questions about proprietary data
       \item Must fine-tune to add new knowledge
@@ -67,6 +69,7 @@
     \column{0.48\textwidth}
     \textbf{With RAG:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Query retrieves relevant documents at runtime
       \item Context injected into prompt
       \item LLM answers based on retrieved docs
@@ -82,6 +85,7 @@
     \column{0.5\textwidth}
     \textbf{Key Advantages:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item No retraining needed
       \item Handles proprietary data
       \item Reduces hallucination
@@ -92,6 +96,7 @@
     \column{0.5\textwidth}
     \textbf{Why RAG Over Fine-tuning:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item No GPU training required
       \item Knowledge stays current
       \item Can cite sources
@@ -103,6 +108,7 @@
 
 \begin{frame}{The RAG Pipeline: Three Steps}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item[\textbf{1. Index}] Split documents into chunks, embed, store in vector DB
     \item[\textbf{2. Retrieve}] Find K most relevant chunks for query
     \item[\textbf{3. Generate}] Pass query with context to LLM, get answer
@@ -111,7 +117,7 @@
 
   \begin{center}
     Documents $\rightarrow$ Chunks $\rightarrow$ Embeddings $\rightarrow$ Vector DB
-    \vspace{0.4cm}
+    \vspace{0.1cm}
 
     Query $\rightarrow$ Top-K Retrieval $\rightarrow$ LLM $\rightarrow$ Answer
   \end{center}
@@ -140,7 +146,7 @@
   result = rag\_chain.invoke(\{"input": "What is RAG?"\}) \\
   }
   \normalsize
-  \vspace{0.3cm}
+  \vspace{0.08cm}
   \docref{LangChain LCEL docs}
 \end{frame}
 
@@ -151,6 +157,7 @@
 
   \textbf{Good RAG Prompt Template:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Clear instruction to use context
     \item Role/expertise framing
     \item Clear separation: context, query, answer
@@ -168,6 +175,7 @@
 
   \textbf{How it works:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Retriever returns K documents
     \item All documents passed as single context block
     \item LLM generates response based on context
@@ -176,6 +184,7 @@
 
   \textbf{Advantages:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Minimal latency
     \item Good for most use cases
     \item Easy to implement
@@ -183,6 +192,7 @@
 
   \textbf{Limitations:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Context window can fill quickly with large docs
     \item No ranking or compression of results
   \end{itemize}
@@ -217,6 +227,7 @@
 
   \textbf{Problem Example:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item User: ``Tell me about RAG''
     \item User: ``What about fine-tuning?''
     \item Without context, system retrieves about fine-tuning in general
@@ -237,6 +248,7 @@
     \column{0.5\textwidth}
     \textbf{Standard Query:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Single embedding
       \item May miss synonyms
       \item Limited perspective
@@ -245,6 +257,7 @@
     \column{0.5\textwidth}
     \textbf{Multi-Query:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Generate 3-5 query variants
       \item Retrieve from each
       \item Combine and deduplicate
@@ -254,6 +267,7 @@
 
   \textbf{Example Variants for ``How do I build RAG?'':}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item ``Steps to implement retrieval-augmented generation''
     \item ``RAG architecture and setup guide''
     \item ``Creating a RAG system from scratch''
@@ -267,9 +281,11 @@
 
   \textbf{Output Structure:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Answer: ``RAG is a technique that...''
     \item Context/Sources:
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item docs/rag\_intro.pdf page 2
       \item docs/langchain\_guide.md section 5
       \item docs/tutorials.html
@@ -278,6 +294,7 @@
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Users can verify answers
     \item Build trust in system
     \item Easy debugging
@@ -291,6 +308,7 @@
 
   \textbf{Citation Prompt Instruction:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item ``Include [Citation: source\_name, passage] when citing''
     \item ``For each claim, provide the source document''
     \item ``Format as [Source: filename, section X]''
@@ -298,11 +316,13 @@
 
   \textbf{Example Output:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item ``RAG is [Citation: langchain\_docs, section 2.1] a technique that combines retrieval with generation.''
   \end{itemize}
 
   \textbf{Advantages:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Verifiable answers
     \item Transparent reasoning
     \item Reduced hallucination
@@ -320,6 +340,7 @@
 
   \textbf{Approaches:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item LLM-based: Use LLM to score and filter documents
     \item Embedding-based: Compute similarity to query
     \item Keyword matching: Keep paragraphs with query terms
@@ -327,6 +348,7 @@
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Fit more documents in context window
     \item Reduce LLM confusion
     \item Lower token usage and costs
@@ -340,6 +362,7 @@
 
   \textbf{Problem Solved:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Small chunks: precise retrieval, no context
     \item Large chunks: good context, bad precision
     \item Solution: retrieve by chunk, return full section
@@ -347,12 +370,14 @@
 
   \textbf{Configuration:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Child splitter: 100-500 tokens (search units)
     \item Parent splitter: 1500-2000 tokens (return units)
   \end{itemize}
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Best of both worlds
     \item Better context for LLM
     \item Improved answer quality
@@ -368,6 +393,7 @@
     \column{0.48\textwidth}
     \textbf{Retrieval Quality:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Recall: Found all relevant docs?
       \item Precision: Were docs relevant?
       \item MRR: Rank of first match?
@@ -376,6 +402,7 @@
     \column{0.48\textwidth}
     \textbf{Generation Quality:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item BLEU/ROUGE: Text similarity
       \item Faithfulness: Grounded in context?
       \item Relevance: Matches query?
@@ -386,6 +413,7 @@
     \column{0.48\textwidth}
     \textbf{Overall:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Hallucination rate
       \item Answer correctness
     \end{itemize}
@@ -393,6 +421,7 @@
     \column{0.48\textwidth}
     \textbf{Cost/Speed:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Latency (E2E)
       \item Tokens per query
       \item Dollar cost per query
@@ -407,6 +436,7 @@
 
   \textbf{RAG Fusion:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Generate multiple queries
     \item Retrieve from each
     \item Reciprocal Rank Fusion (RRF) to combine
@@ -415,6 +445,7 @@
 
   \textbf{Re-ranking Strategies:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item LLM-based: Use LLM to score docs
     \item Cross-encoder: Specialized ranking model
     \item Diversity: Cover different aspects
@@ -431,6 +462,7 @@
 
   \textbf{How Streaming Works:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Retrieval happens upfront (not streamed)
     \item Only LLM generation is streamed
     \item Sources returned separately
@@ -439,6 +471,7 @@
 
   \textbf{Considerations:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Latency still includes retrieval time
     \item Frontend must handle streaming
     \item Good for long responses
@@ -504,6 +537,7 @@
     \column{0.5\textwidth}
     \textbf{Data and Indexing:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Documents loaded and versioned
       \item Chunking strategy tested
       \item Vector DB production-ready
@@ -513,6 +547,7 @@
     \column{0.5\textwidth}
     \textbf{Evaluation and Testing:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Human eval on sample set
       \item Automated metrics (RAGAS)
       \item A/B testing framework
@@ -524,6 +559,7 @@
     \column{0.5\textwidth}
     \textbf{Operations:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Caching strategy
       \item Rate limiting
       \item Error handling
@@ -533,6 +569,7 @@
     \column{0.5\textwidth}
     \textbf{Monitoring:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Latency tracked
       \item Token costs logged
       \item Hallucination detection
@@ -548,6 +585,7 @@
 
   \textbf{Routing Strategies:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Query classification: Does it need RAG?
     \item Retriever selection: Keyword vs semantic vs hybrid
     \item Document source routing: Which DB?
@@ -556,6 +594,7 @@
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Reduced latency for simple queries
     \item Better results for complex queries
     \item Cost optimization
@@ -571,6 +610,7 @@
     \column{0.5\textwidth}
     \textbf{Query Caching:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Cache exact same queries
       \item FIFO or LRU cache
       \item Limited by diversity
@@ -579,6 +619,7 @@
     \column{0.5\textwidth}
     \textbf{Semantic Caching:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Cache by query intent
       \item Return similar answers
       \item More flexible
@@ -587,6 +628,7 @@
 
   \textbf{Implementation:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item In-memory cache for development
     \item Redis for production
     \item LangChain built-in support
@@ -602,6 +644,7 @@
     \column{0.48\textwidth}
     \textbf{Keyword Search:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item BM25, TF-IDF, Lucene
       \item Exact term matching
       \item Good for names/acronyms
@@ -611,6 +654,7 @@
     \column{0.48\textwidth}
     \textbf{Semantic Search:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Vector embeddings
       \item Synonym understanding
       \item Good for concepts
@@ -620,6 +664,7 @@
 
   \textbf{Approach:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Retrieve from both
     \item Rank and deduplicate
     \item Return combined results
@@ -633,6 +678,7 @@
 
   \textbf{Common Metadata:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Date: Only 2025 onward
     \item Source: Official docs only
     \item Category: API reference only
@@ -642,6 +688,7 @@
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Filter irrelevant results early
     \item Reduce context noise
     \item Improve answer quality
@@ -656,6 +703,7 @@
 
   \textbf{Pattern:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item LLM breaks complex question into sub-questions
     \item Retrieve context for each sub-question
     \item Combine answers into final response
@@ -663,6 +711,7 @@
 
   \textbf{Example:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Q: ``Compare RAG and fine-tuning for proprietary documents''
     \item Sub-Q1: ``What is RAG?''
     \item Sub-Q2: ``What is fine-tuning?''
@@ -679,6 +728,7 @@
 
   \textbf{Strategies:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Adaptive K: Increase K if low confidence
     \item Token Budget: Reserve tokens for response
     \item Truncation: Summarize long docs
@@ -687,6 +737,7 @@
 
   \textbf{Implementation:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Monitor token usage
     \item Adjust K based on quality
     \item Track latency impact
@@ -696,6 +747,7 @@
 \begin{frame}{Testing and Debugging RAG}
   \textbf{Testing Strategy:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Unit tests: Chunking, embeddings, indexing
     \item Integration tests: Retrieval accuracy, prompt formatting
     \item E2E tests: Full pipeline, known Q\&A pairs
@@ -704,6 +756,7 @@
 
   \textbf{Debugging Checklist:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Poor answers: Check retrieved docs, prompt, LLM
     \item Slow queries: Profile retrieval vs LLM time
     \item Out of memory: Reduce docs, chunk size
@@ -712,6 +765,7 @@
 
   \textbf{Tools:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item LangSmith for tracing
     \item RAGAS for metrics
     \item Custom evaluation datasets
@@ -725,6 +779,7 @@
 
   \textbf{Mitigation Strategies:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item PII Redaction: Remove/mask emails, SSNs before indexing
     \item Access Control: Only authorized users see certain docs
     \item Query Filtering: Restrict sensitive field retrieval
@@ -733,6 +788,7 @@
 
   \textbf{Best Practices:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Audit documents before indexing
     \item Use metadata filtering
     \item Monitor for data leakage
@@ -747,6 +803,7 @@
 
   \textbf{Optimization Strategies:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Smaller Models: Cheaper embeddings, smaller LLMs
     \item Batch Processing: Index once, reuse embeddings
     \item Reduce K: Start with 3 instead of 10
@@ -757,6 +814,7 @@
 
   \textbf{Typical Costs:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item RAG query: dollars 0.001--dollars 0.01
     \item Depends on model, context size, vector DB
   \end{itemize}
@@ -769,6 +827,7 @@
 
   \textbf{Pattern:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Extract entities and relationships from docs
     \item Build knowledge graph (Neo4j, RDF)
     \item Query graph for structured context
@@ -777,6 +836,7 @@
 
   \textbf{Benefits:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Better reasoning on relationships
     \item More precise, entity-based retrieval
     \item Combines semantic plus structured search
@@ -790,6 +850,7 @@
 
   \textbf{Challenges:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item No standard multi-modal embeddings yet
     \item Slower inference, larger models
     \item Complex indexing (text plus images)
@@ -797,6 +858,7 @@
 
   \textbf{Approaches:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Vision-Language Models: CLIP, LLaVA
     \item Hybrid Indexing: Store image embeddings and descriptions
     \item Image-to-Text: Captions then standard RAG
@@ -808,6 +870,7 @@
 \begin{frame}{RAG Cheat Sheet: Quick Reference}
   \textbf{Basic RAG in 3 lines:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \texttt{retriever = db.as\_retriever(k=3)}
     \item \texttt{rag\_chain = create\_retrieval\_chain(retriever, doc\_chain)}
     \item \texttt{result = rag\_chain.invoke(\{``input'': question\})}
@@ -815,6 +878,7 @@
 
   \textbf{Key Components:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Retriever: vector DB, keyword, multi-query
     \item Doc Chain: stuff, map-reduce, refine
     \item Full Chain: retrieval, history-aware
@@ -822,6 +886,7 @@
 
   \textbf{Production Considerations:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Evaluate with RAGAS
     \item Monitor with LangSmith
     \item Cache aggressively
@@ -831,6 +896,7 @@
 
 \begin{frame}{Self-Check Questions}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item What is RAG and how does it differ from fine-tuning?
     \item Explain the three steps of a RAG pipeline.
     \item How does multi-query retrieval improve recall?
@@ -841,7 +907,7 @@
     \item How can you reduce RAG costs?
   \end{enumerate}
 
-  \vspace{0.5cm}
+  \vspace{0.08cm}
   \textcolor{lcorange}{\textbf{Hint:}} Review slides on basics (frames 4-5), LCEL (frames 6-9), and evaluation (frame 18).
 \end{frame}
 
@@ -852,6 +918,7 @@
 
   \textbf{What You've Learned:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item RAG fundamentals and mental model
     \item Building RAG chains with LCEL
     \item Advanced techniques: multi-query, compression, citations
@@ -861,6 +928,7 @@
 
   \textbf{Next Steps:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Build a simple RAG pipeline with your documents
     \item Evaluate using RAGAS or custom metrics
     \item Iterate on retrieval (chunk size, K, retriever)
@@ -872,6 +940,7 @@
 \begin{frame}{Resources and Further Reading}
   \textbf{Official LangChain Docs:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \url{https://docs.smith.langchain.com/rag}
     \item \url{https://docs.smith.langchain.com/rag-from-scratch}
     \item \url{https://api.python.langchain.com}
@@ -879,12 +948,14 @@
 
   \textbf{Evaluation and Tracing:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item RAGAS: \url{https://github.com/explodinggradients/ragas}
     \item LangSmith: \url{https://docs.smith.langchain.com}
   \end{itemize}
 
   \textbf{Research:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks (Lewis et al., 2020)
     \item In-Context Retrieval-Augmented Language Models (Shi et al., 2023)
   \end{itemize}

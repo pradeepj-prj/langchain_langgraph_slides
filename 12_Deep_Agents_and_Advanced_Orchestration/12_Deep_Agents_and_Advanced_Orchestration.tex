@@ -19,13 +19,13 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
 
 \lstset{
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\tiny,
   backgroundcolor=\color{codebg},
   breaklines=true,
   frame=single,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -59,6 +61,7 @@
 \column{0.48\textwidth}
 \textbf{Part I: Fundamentals}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item Mental Model: What are Deep Agents?
   \item Problems They Solve
   \item Architecture Overview
@@ -69,6 +72,7 @@
 \column{0.48\textwidth}
 \textbf{Part II: Advanced Patterns}
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item Long-Running Tasks
   \item Context Management
   \item MCP Integration
@@ -89,6 +93,7 @@
 \begin{conceptbox}[What are Deep Agents?]
 Autonomous agents capable of:
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Long-running execution}: tasks that take minutes to hours
   \item \textbf{Multi-step planning}: decompose complex goals into subtasks
   \item \textbf{Persistent state}: offload context to filesystem
@@ -230,6 +235,7 @@ todos = write_todos([
 \vspace{1em}
 \begin{conceptbox}[Key Features]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Automatic task breakdown from agent reasoning
   \item Progress tracking (pending, in-progress, completed)
   \item Sub-task dependencies and ordering
@@ -299,6 +305,7 @@ parent_agent.write_todos(
 
 \begin{tipbox}[Benefits]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Parallelization}: multiple child agents work simultaneously
   \item \textbf{Isolation}: each child has separate state
   \item \textbf{Scalability}: handle larger problems
@@ -347,11 +354,13 @@ result = agent.run(
 \frametitle{Deep Agent Execution Flow}
 
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Initialize}: Create agent with LLM + tools
   \item \textbf{Plan}: Call LLM to decompose goal into subtasks
   \item \textbf{Store Plan}: Save todos to database/filesystem
   \item \textbf{Execute Loop}:
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Fetch next pending task
     \item Call tools to complete task
     \item Save results and state
@@ -371,9 +380,9 @@ result = agent.run(
 % ==================== SLIDE 12: TikZ ARCHITECTURE DIAGRAM ====================
 \begin{frame}[fragile]
 \frametitle{Deep Agent Execution Architecture}
-
+\vspace{-0.15cm}
 \begin{center}
-\begin{tikzpicture}[scale=0.9, every node/.style={font=\small}]
+\begin{tikzpicture}[scale=0.88, every node/.style={font=\small}]
   % Goal
   \node[draw, ellipse, fill=yellow!20] (goal) at (3,7) {Goal/Task};
 
@@ -724,6 +733,7 @@ Learning curve & Easy & Medium & Medium \\
 \vspace{1em}
 \begin{tipbox}[Choice Guide]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Quick tasks (seconds)}: Standard Agent
   \item \textbf{Complex workflows}: LangGraph
   \item \textbf{Long-running + planning}: Deep Agent
@@ -738,6 +748,7 @@ Learning curve & Easy & Medium & Medium \\
 
 \begin{tipbox}[Good Fit]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Research tasks taking 10+ minutes
   \item Data processing with 100+ items
   \item Multi-stage workflows with handoffs
@@ -748,6 +759,7 @@ Learning curve & Easy & Medium & Medium \\
 
 \begin{warningbox}[Poor Fit]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Real-time interactive chat
   \item Tasks under 30 seconds
   \item Simple tool calling
@@ -799,22 +811,19 @@ Long-running agents + token-priced LLMs = high costs.
 \end{warningbox}
 
 \begin{lstlisting}
-# Monitor token usage
 from langchain_core.callbacks import TokenUsageCallback
-
 token_tracker = TokenUsageCallback()
-
 agent.run(
   goal="...",
   callbacks=[token_tracker]
 )
-
 print(f"Tokens: {token_tracker.total_tokens}")
 print(f"Cost: ${token_tracker.estimated_cost}")
 \end{lstlisting}
 
 \begin{tipbox}[Mitigation Strategies]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Use cheaper models (Haiku, Opus)
   \item Batch operations to reduce calls
   \item Cache results aggressively
@@ -898,16 +907,13 @@ def test_agent_planning():
   """Test that agent creates reasonable plan."""
   agent = DeepAgent(llm=llm, tools=tools)
   plan = agent.create_plan("Analyze sales")
-
   assert len(plan.tasks) > 0
   assert all(isinstance(t, Task) for t in plan.tasks)
-
 def test_agent_recovery():
   """Test checkpoint recovery."""
   agent1 = DeepAgent(llm=llm)
   agent1.run_step()
   ckpt_id = agent1.save_checkpoint()
-
   agent2 = DeepAgent(llm=llm)
   agent2.load_checkpoint(ckpt_id)
   assert agent2.current_task == agent1.current_task
@@ -915,6 +921,7 @@ def test_agent_recovery():
 
 \begin{tipbox}[Coverage Areas]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Plan generation (reasonable decomposition)
   \item Tool execution (correct results)
   \item Checkpointing (state preservation)
@@ -965,6 +972,7 @@ with open("agent.log") as f:
 \frametitle{Cost Optimization Strategies}
 
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item \textbf{Model Selection}: Use Haiku for planning, Opus for reasoning
   \item \textbf{Batching}: Process multiple items per iteration
   \item \textbf{Caching}: Store tool results, reuse within session
@@ -996,6 +1004,7 @@ agent = DeepAgent(
 
 \begin{conceptbox}[Before Deployment]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item ✓ Set \texttt{max\_iterations} and \texttt{timeout\_seconds}
   \item ✓ Enable checkpointing to cloud storage (S3, GCS)
   \item ✓ Configure logging to centralized system
@@ -1028,24 +1037,15 @@ from langchain.tools import tool
 @tool
 def web_search(query: str) -> str:
   """Search web for company info."""
-  # Use search API
   return results
-
 @tool
 def fetch_financials(ticker: str) -> str:
   """Fetch latest financials."""
-  # Use financial API
   return data
-
-# Agent
 agent = DeepAgent(
   llm=ChatOpenAI(model="gpt-4"),
   tools=[web_search, fetch_financials],
-  system_prompt="""
-    You are a financial analyst.
-    Investigate company, analyze metrics,
-    write a 1000-word report.
-  """,
+  system_prompt="You are a financial analyst. Analyze company metrics, write report.",
   max_iterations=30,
   timeout_seconds=1800
 )
@@ -1069,8 +1069,6 @@ supervisor = DeepAgent(
   llm=llm,
   system_prompt="Manage data processing pipeline"
 )
-
-# Create batch-processing tool
 @tool
 def spawn_batch_worker(batch_id: int, records):
   """Delegate batch to worker agent."""
@@ -1082,10 +1080,7 @@ def spawn_batch_worker(batch_id: int, records):
     goal=f"Clean and enrich batch {batch_id}",
     context={"records": records}
   )
-
-# Supervisor orchestrates
 supervisor.tools.append(spawn_batch_worker)
-
 result = supervisor.run(
   goal="Process all 10k customer records"
 )
@@ -1154,6 +1149,7 @@ Multi-step research, data processing, complex workflows requiring hours of work.
 
 \begin{conceptbox}[Core Tools]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \texttt{write\_todos}: Task planning
   \item Filesystem tools: Context management
   \item \texttt{spawn\_agent}: Sub-task delegation
@@ -1199,8 +1195,10 @@ Timeouts & Per-tool + per-agent timeouts \\
 \frametitle{Self-Check Questions}
 
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \item What is the primary difference between a Standard Agent and a Deep Agent?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Deep Agents support long-running, planned, resilient execution with sub-task delegation.}
   \end{itemize}
@@ -1208,6 +1206,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item How do Deep Agents prevent context overflow?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Filesystem offloading; save large data to files, reference in tools.}
   \end{itemize}
@@ -1215,6 +1214,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item What tool is used for initial task decomposition?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: \texttt{write\_todos} creates an ordered task list.}
   \end{itemize}
@@ -1222,6 +1222,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item How do you recover from agent interruption?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Load from checkpoint; agent resumes from last completed task.}
   \end{itemize}
@@ -1234,9 +1235,11 @@ Timeouts & Per-tool + per-agent timeouts \\
 \frametitle{Self-Check Questions (Continued)}
 
 \begin{enumerate}
+    \setlength{\itemsep}{1pt}
   \setcounter{enumi}{4}
   \item Name two sub-agent spawning use cases.
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Batch processing (10K items), parallel analysis (5 domains).}
   \end{itemize}
@@ -1244,6 +1247,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item What is the Supervisor pattern?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: One master agent delegates work to specialized worker agents.}
   \end{itemize}
@@ -1251,6 +1255,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item How does MCP integration work in LangChain?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Use langchain-mcp-adapters; MCP servers auto-convert to LangChain tools.}
   \end{itemize}
@@ -1258,6 +1263,7 @@ Timeouts & Per-tool + per-agent timeouts \\
   \vspace{0.5em}
   \item What are the top 3 pitfalls to avoid?
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \small
     \item {\color{docgray}Answer: Runaway agents (no limits), cost explosion (track tokens), context overflow (offload).}
   \end{itemize}
@@ -1271,6 +1277,7 @@ Timeouts & Per-tool + per-agent timeouts \\
 
 \begin{tipbox}[Official Documentation]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item LangChain: \url{https://python.langchain.com}
   \item langchain-deepagents: \url{https://github.com/langchain-ai/langchain-deepagents}
   \item LangGraph: \url{https://langchain-ai.github.io/langgraph}
@@ -1280,6 +1287,7 @@ Timeouts & Per-tool + per-agent timeouts \\
 
 \begin{tipbox}[Recommended Reading]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item "Planning and Replanning" (Anthropic, 2024)
   \item "Fault-Tolerant AI" whitepaper
   \item LangGraph Docs: Checkpoint Strategies
@@ -1377,6 +1385,7 @@ Human-in-the-loop: agent asks for approval before risky actions.
 
 \begin{conceptbox}[Q2 2026 Planned]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item GPU acceleration for planning
   \item Multi-tenancy support
   \item Web UI for agent monitoring
@@ -1386,6 +1395,7 @@ Human-in-the-loop: agent asks for approval before risky actions.
 
 \begin{conceptbox}[Beyond]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Federated agent networks
   \item Formal verification of plans
   \item Autonomous cost optimization
@@ -1404,6 +1414,7 @@ Human-in-the-loop: agent asks for approval before risky actions.
 
 \begin{tipbox}[Getting Help]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item \textbf{GitHub Issues}: Report bugs, request features
   \item \textbf{Discord}: Real-time community chat (\url{discord.gg/langchain})
   \item \textbf{GitHub Discussions}: Best practices, architecture Q\&A
@@ -1413,6 +1424,7 @@ Human-in-the-loop: agent asks for approval before risky actions.
 
 \begin{tipbox}[Contributing]
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item PRs welcome for bugs and features
   \item Docs improvements highly valued
   \item Tool implementations appreciated
@@ -1431,6 +1443,7 @@ Human-in-the-loop: agent asks for approval before risky actions.
 \begin{conceptbox}[The Big Picture]
 Deep Agents represent a shift toward \textbf{truly autonomous AI systems}:
 \begin{itemize}
+    \setlength{\itemsep}{1pt}
   \item Not just answering questions
   \item But \textbf{planning}, \textbf{executing}, and \textbf{learning}
   \item Over \textbf{hours}, not milliseconds

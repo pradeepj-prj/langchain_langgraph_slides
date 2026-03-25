@@ -20,10 +20,10 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
 
 \lstset{
   basicstyle=\ttfamily\scriptsize,
@@ -41,6 +41,8 @@
   xrightmargin=2pt,
   mathescape=false,
   columns=fullflexible,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -59,6 +61,7 @@
 \begin{frame}
   \frametitle{Section Roadmap}
   \begin{itemize}
+\setlength{\itemsep}{1pt}
     \item Mental Model: Stateless LLMs and the memory problem
     \item Foundation: Message history as core memory mechanism
     \item RunnableWithMessageHistory: Adding memory to chains
@@ -69,7 +72,7 @@
     \item Long-term memory: Preferences and facts
     \item Common pitfalls and best practices
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.6em}
   \textcolor{lcred}{\textbf{Note:}} LangChain v1.x deprecated ConversationBufferMemory.
   Modern approach: RunnableWithMessageHistory + trim\_messages().
 \end{frame}
@@ -81,6 +84,7 @@
     \column{0.5\textwidth}
     \textbf{The Stateless LLM Problem:}
     \begin{itemize}
+\setlength{\itemsep}{1pt}
       \item LLMs process one prompt at a time
       \item No internal state between calls
       \item Each request is independent
@@ -90,13 +94,14 @@
     \column{0.5\textwidth}
     \textbf{Human Conversation Pattern:}
     \begin{itemize}
+\setlength{\itemsep}{1pt}
       \item We retain context from earlier messages
       \item We reference prior statements
       \item We build on previous agreements
       \item Memory is essential for coherence
     \end{itemize}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \begin{conceptbox}[Core Insight]
     \textbf{Memory} bridges the gap: we manually track conversation history and
     inject it into each new prompt so the LLM can ``see'' the context.
@@ -110,6 +115,7 @@
     \column{0.5\textwidth}
     \textbf{Without Memory:}
     \begin{enumerate}
+\setlength{\itemsep}{1pt}
       \item User: \textit{``My name is Alice''}
       \item LLM responds generically
       \item User: \textit{``What's my name?''}
@@ -119,6 +125,7 @@
     \column{0.5\textwidth}
     \textbf{With Memory:}
     \begin{enumerate}
+\setlength{\itemsep}{1pt}
       \item User: \textit{``My name is Alice''}
       \item Store: \texttt{[User: My name is Alice]}
       \item User: \textit{``What's my name?''}
@@ -126,7 +133,7 @@
       \item LLM: \textit{``Your name is Alice.''} \textcolor{lcgreen}{\checkmark}
     \end{enumerate}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \begin{warningbox}[Crucial]
     Without explicitly managing conversation history, each LLM call forgets everything.
   \end{warningbox}
@@ -139,7 +146,7 @@
     A list of messages (user, assistant, system) that represents the conversation.
     This is the \textbf{fundamental building block} of memory in LangChain.
   \end{conceptbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \textbf{Message Types:}
   \begin{itemize}
     \item \texttt{HumanMessage}: User input
@@ -148,10 +155,11 @@
     \item \texttt{ToolMessage}: Tool output
     \item \texttt{ToolCall}: Function invocation record
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.6em}
   \textbf{Example Structure:}
   \begin{codebox}[Message List]
-    messages = [SystemMessage(content=``You are helpful''), HumanMessage(content=``My name is Alice''), AIMessage(content=``Nice to meet you!'')]
+    \ttfamily\small
+    messages = [SystemMessage(...), HumanMessage(...), AIMessage(...)]
   \end{codebox}
 \end{frame}
 
@@ -159,7 +167,7 @@
 \begin{frame}
   \frametitle{Manual Message History Management}
   \textbf{The basic pattern: append and pass}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{codebox}[Basic Loop]
     \ttfamily\small
     messages = [] \\
@@ -168,7 +176,7 @@
     response = model.invoke(messages) \\
     messages.append(AIMessage(content=response.content))
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   Key points:
   \begin{itemize}
     \item Each turn: append user message
@@ -190,7 +198,7 @@
       \item Requires manual bookkeeping in production
     \end{itemize}
   \end{warningbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Solution Direction]
     LangChain provides abstractions to:
     \begin{itemize}
@@ -206,7 +214,7 @@
 \begin{frame}
   \frametitle{RunnableWithMessageHistory: Adding Memory to Chains}
   \textbf{The Modern Approach:} Wrap a chain with automatic history management
-  \vspace{1em}
+  \vspace{0.4em}
   \begin{codebox}[Setup]
     \ttfamily\small
     chain = prompt | model \\
@@ -216,13 +224,13 @@
     \hspace{2em} input\_messages\_key=``input'' \\
     )
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.3em}
   \begin{codebox}[Usage]
     \ttfamily\small
     response = chain\_with\_history.invoke( \\
     \hspace{2em} \{``input'': ``What's my name?''\}, \\
-    \hspace{2em} config=\{``configurable'': \{``session\_id'': ``user\_123''\}\} \\
-    )
+    \hspace{2em} config=\{``configurable'': \\
+    \hspace{4em} \{``session\_id'': ``user\_123''\}\} )
   \end{codebox}
   \docref{RunnableWithMessageHistory}
 \end{frame}
@@ -231,7 +239,7 @@
 \begin{frame}
   \frametitle{Implementing get\_session\_history}
   \textbf{The callback that retrieves/stores history for a session:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{codebox}[In-Memory Backend]
     \ttfamily\small
     store = \{\} \\
@@ -241,7 +249,7 @@
     \hspace{4em} store[session\_id] = ChatMessageHistory() \\
     \hspace{2em} return store[session\_id]
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   Or use persistent backends (PostgreSQL, Redis, etc.)
   \docref{BaseChatMessageHistory}
 \end{frame}
@@ -250,7 +258,7 @@
 \begin{frame}
   \frametitle{Chat Message History Backends}
   \textbf{Where conversation history is stored:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tabular}{|l|l|l|}
     \hline
     \textbf{Backend} & \textbf{Use Case} & \textbf{Persistence} \\
@@ -266,7 +274,7 @@
     FileChatMessageHistory & Local files, development & Filesystem \\
     \hline
   \end{tabular}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Choice Guide]
     \textbf{Development:} ChatMessageHistory or FileChatMessageHistory
 
@@ -288,7 +296,7 @@
     \hspace{4em} ttl=86400 \\
     \hspace{2em} )
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[TTL Feature]
     Time-To-Live: messages automatically expire after 24 hours
   \end{tipbox}
@@ -299,7 +307,7 @@
 \begin{frame}
   \frametitle{Sliding Window Memory: trim\_messages()}
   \textbf{Keep only recent messages to control context window:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{codebox}[Trimming Configuration]
     \ttfamily\small
     trimmer = trim\_messages( \\
@@ -309,7 +317,7 @@
     \hspace{2em} allow\_partial=False \\
     )
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{conceptbox}[Effect]
     Prevents unbounded growth of conversation history while preserving recent context.
   \end{conceptbox}
@@ -320,7 +328,7 @@
 \begin{frame}
   \frametitle{Summary Memory: Condensing Old Conversations}
   \textbf{Strategy: Periodically summarize older messages}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{columns}
     \column{0.5\textwidth}
     \textbf{Before:}
@@ -338,7 +346,7 @@
       \item Compressed context
     \end{itemize}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \textbf{Pattern:}
   \begin{enumerate}
     \item Detect when history exceeds 50 messages
@@ -352,7 +360,7 @@
 \begin{frame}
   \frametitle{Token-Based Trimming}
   \textbf{Advanced: Trim by token count, not message count}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{codebox}[Token Counting]
     \ttfamily\small
     trimmer = trim\_messages( \\
@@ -362,7 +370,7 @@
     ) \\
     trimmed = trimmer.invoke(messages)
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Advantage]
     Respects actual token budget, not message count. Most accurate for cost control.
   \end{tipbox}
@@ -373,7 +381,7 @@
 \begin{frame}
   \frametitle{MessagesPlaceholder in Prompts}
   \textbf{Inject conversation history into prompt templates:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{codebox}[Prompt Template]
     \ttfamily\small
     prompt = ChatPromptTemplate.from\_messages([ \\
@@ -382,7 +390,7 @@
     \hspace{2em} (``user'', ``\{input\}'') \\
     ])
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{conceptbox}[How It Works]
     MessagesPlaceholder expands to the full message list at runtime.
   \end{conceptbox}
@@ -393,7 +401,7 @@
 \begin{frame}
   \frametitle{Memory in Agents: LangGraph Checkpointing}
   \textbf{For agents with tools, use LangGraph persistence:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{columns}
     \column{0.5\textwidth}
     \textbf{LangGraph Advantages:}
@@ -412,7 +420,7 @@
       \item Custom backends
     \end{itemize}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \begin{conceptbox}[Thread ID Pattern]
     Each user/session gets a \texttt{thread\_id}. LangGraph tracks all state within that thread.
   \end{conceptbox}
@@ -433,7 +441,7 @@
     \hspace{2em} config=config \\
     )
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   Next invocation: state automatically restored from checkpoint.
   \docref{langgraph.checkpoint}
 \end{frame}
@@ -451,7 +459,7 @@
     \hspace{2em} checkpointer=postgres\_saver \\
     )
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Persistence]
     Each \texttt{thread\_id} persists across application restarts via PostgreSQL.
   \end{tipbox}
@@ -462,7 +470,7 @@
 \begin{frame}
   \frametitle{Multi-Session Memory: thread\_id \& user\_id}
   \textbf{Patterns for managing multiple concurrent conversations:}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{columns}
     \column{0.5\textwidth}
     \textbf{thread\_id (LangGraph):}
@@ -482,7 +490,7 @@
       \item Simple key-value lookup
     \end{itemize}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \begin{tipbox}[Best Practice]
     Use format: \texttt{thread\_id = user\_id + ``\_'' + conversation\_id}
   \end{tipbox}
@@ -503,7 +511,7 @@
     \hspace{2em} ) \\
     \hspace{2em} return response
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   Always include \texttt{user\_id} in session identifier to prevent cross-user leakage.
 \end{frame}
 
@@ -511,7 +519,7 @@
 \begin{frame}
   \frametitle{Long-Term Memory: Preferences \& Facts}
   \textbf{Beyond message history: storing extracted knowledge}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{columns}
     \column{0.5\textwidth}
     \textbf{User Preferences:}
@@ -531,7 +539,7 @@
       \item Previous decisions
     \end{itemize}
   \end{columns}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \textbf{Pattern:} Extract facts from conversations, store in database, inject into prompts.
 \end{frame}
 
@@ -547,7 +555,7 @@
     extraction = model.with\_structured\_output(UserFact) \\
     facts = extraction.invoke(\{``messages'': messages\})
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Storage]
     Store facts in database table: user\_facts(user\_id, key, value). Inject on session start.
   \end{tipbox}
@@ -566,7 +574,7 @@
     \\
     system\_prompt = ``You are helpful.'' + facts\_text
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{conceptbox}[Effect]
     Personalizes every response without re-querying conversation history.
   \end{conceptbox}
@@ -629,7 +637,7 @@
     Long-term Facts & \checkmark & \checkmark & Good & Personalization \\
     \hline
   \end{tabular}
-  \vspace{1.5em}
+  \vspace{0.8em}
   \begin{conceptbox}[Recommendation]
     \textbf{Start:} Sliding window + MessagesPlaceholder
 
@@ -649,7 +657,7 @@
       \item Expensive API calls (charged per token)
     \end{itemize}
   \end{warningbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Solution]
     Always use \texttt{trim\_messages()} or sliding window strategy.
     \begin{itemize}
@@ -671,7 +679,7 @@
       \item Database race conditions
     \end{itemize}
   \end{warningbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Solution]
     \begin{itemize}
       \item Always include user\_id in session\_id
@@ -688,7 +696,7 @@
   \begin{warningbox}[Symptom]
     LLM responses become short or irrelevant after 50+ messages
   \end{warningbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \textbf{Root Causes:}
   \begin{itemize}
     \item No trimmer configured
@@ -696,7 +704,7 @@
     \item Token budget too small
     \item System message getting dropped
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Prevention Checklist]
     \begin{itemize}
       \item \checkmark Create trimmer with appropriate max\_tokens
@@ -718,7 +726,7 @@
       \item User frustration
     \end{itemize}
   \end{warningbox}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{tipbox}[Mitigation Strategies]
     \begin{itemize}
       \item Use summary memory for 50+ message conversations
@@ -756,7 +764,7 @@
     \item trim\_messages() controls context growth
     \item LangGraph provides agent state persistence
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.6em}
   \textbf{Modern Patterns:}
   \begin{itemize}
     \item Sliding window memory for most cases
@@ -764,7 +772,7 @@
     \item Long-term facts for personalization
     \item PostgreSQL backend for production
   \end{itemize}
-  \vspace{1em}
+  \vspace{0.6em}
   \begin{conceptbox}[Remember]
     Memory is not a luxury; it's fundamental to building coherent, contextual applications.
   \end{conceptbox}
@@ -781,7 +789,7 @@
     from langchain\_postgres import PostgresChatMessageHistory \\
     from langgraph.checkpoint.postgres import PostgresSaver
   \end{codebox}
-  \vspace{1em}
+  \vspace{0.6em}
   \textbf{Basic Setup:}
   \begin{enumerate}
     \item Create chain: \texttt{chain = prompt | model}
@@ -854,7 +862,7 @@
     \item \textbf{trim\_messages:} https://python.langchain.com/docs/how\_to/trim\_messages
     \item \textbf{Chat History Backends:} https://python.langchain.com/docs/integrations/memory
   \end{itemize}
-  \vspace{2em}
+  \vspace{1em}
   \begin{conceptbox}[Next Steps]
     Experiment with different memory strategies on a small project.
     Monitor token usage and adjust max\_tokens for your use case.
@@ -882,11 +890,11 @@
   \begin{center}
     \Large \textbf{Memory \& Conversation Management}
 
-    \vspace{2em}
+    \vspace{1em}
 
     You now understand how to build stateful, context-aware LLM applications.
 
-    \vspace{2em}
+    \vspace{1em}
 
     Next: Section 07 --- Agents \& Tools
   \end{center}

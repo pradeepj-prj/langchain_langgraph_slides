@@ -19,13 +19,13 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
 
 \lstset{
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\tiny,
   backgroundcolor=\color{codebg},
   breaklines=true,
   frame=single,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -58,7 +60,7 @@
 % SLIDE 2: Agenda
 % ============================================================================
 \begin{frame}[fragile]{Agenda}
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item Mental model: Tools as bridges to the real world
   \item Tool definitions: what is a tool?
   \item Creating tools: decorators and explicit schemas
@@ -118,7 +120,7 @@ Without tools, LLMs can only talk about things. With tools, LLMs can \textit{do}
 \begin{conceptbox}[A Tool is...]
 \small
 A callable interface between an LLM and an external system, defined by:
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item \textbf{Name}: unique identifier (e.g., \texttt{search\_documents})
   \item \textbf{Description}: human-readable explanation for the LLM
   \item \textbf{Schema}: input type, argument names, types, descriptions
@@ -138,7 +140,7 @@ A callable interface between an LLM and an external system, defined by:
 % SLIDE 5: Tool Invocation Flow
 % ============================================================================
 \begin{frame}[fragile]{Tool Invocation Flow}
-\begin{enumerate}
+\begin{enumerate}\setlength{\itemsep}{1pt}
   \item LLM receives user query + bound tools
   \item LLM \textbf{decides} which tool(s) to call (if any)
   \item LLM returns \texttt{tool\_calls}: list of \{name, args\}
@@ -376,7 +378,7 @@ tool_result = weather.invoke({"city": "NYC"})
 % ============================================================================
 % SLIDE 13: ToolMessage - Returning Results
 % ============================================================================
-\begin{frame}[fragile]{ToolMessage: Returning Tool Results to LLM}
+\begin{frame}[fragile,shrink=3]{ToolMessage: Returning Tool Results to LLM}
 \begin{codebox}[Use ToolMessage for Proper Continuations]
 \begin{lstlisting}
 from langchain.schema import ToolMessage, HumanMessage
@@ -412,7 +414,7 @@ print(final.content)
 % ============================================================================
 % SLIDE 14: Multiple Tools
 % ============================================================================
-\begin{frame}[fragile]{Multiple Tools in One Call}
+\begin{frame}[fragile,shrink=3]{Multiple Tools in One Call}
 \begin{codebox}[LLM Can Call Multiple Tools at Once]
 \begin{lstlisting}
 from langchain.tools import tool
@@ -449,7 +451,7 @@ Parallel tool calls reduce latency when multiple tools are needed.
 % ============================================================================
 % SLIDE 15: Tool Choice - Auto vs Required vs Forced
 % ============================================================================
-\begin{frame}[fragile]{Tool Choice: Controlling When Tools Are Called}
+\begin{frame}[fragile,shrink=3]{Tool Choice: Controlling When Tools Are Called}
 \begin{codebox}[Tool Choice Parameter]
 \begin{lstlisting}
 model = ChatAnthropic()
@@ -483,7 +485,7 @@ response = model_forced.invoke("Hello")
 % ============================================================================
 % SLIDE 16: Built-in Tools
 % ============================================================================
-\begin{frame}[fragile]{Built-in Tools: LangChain Provides Some}
+\begin{frame}[fragile,shrink=2]{Built-in Tools: LangChain Provides Some}
 \begin{codebox}[Using LangChain Built-in Tools]
 \begin{lstlisting}
 from langchain.tools import (
@@ -516,7 +518,7 @@ Check \texttt{langchain.tools} and \texttt{langchain\_community.tools} for ready
 % ============================================================================
 % SLIDE 17: Async Tools
 % ============================================================================
-\begin{frame}[fragile]{Async Tools: Non-blocking Execution}
+\begin{frame}[fragile,shrink=2]{Async Tools: Non-blocking Execution}
 \begin{codebox}[Async Tool Implementation]
 \begin{lstlisting}
 from langchain.tools import tool
@@ -578,7 +580,7 @@ Always return error messages as tool output. Exceptions break the tool calling f
 % ============================================================================
 % SLIDE 19: Tool Input Validation
 % ============================================================================
-\begin{frame}[fragile]{Input Validation and Sanitization}
+\begin{frame}[fragile,shrink=3]{Input Validation and Sanitization}
 \begin{codebox}[Validate Inputs Before Use]
 \begin{lstlisting}
 from langchain.tools import StructuredTool
@@ -615,7 +617,7 @@ Pydantic validators execute before the function runs.
 % ============================================================================
 % SLIDE 20: MCP (Model Context Protocol) Adapters
 % ============================================================================
-\begin{frame}[fragile]{MCP Integration: Using MCP Tools with LangChain}
+\begin{frame}[fragile,shrink=2]{MCP Integration: Using MCP Tools with LangChain}
 \begin{conceptbox}[What is MCP?]
 Model Context Protocol (MCP) is a protocol for exposing tools and resources. LangChain can adapt MCP servers to work as tools.
 \end{conceptbox}
@@ -641,8 +643,8 @@ model_with_tool = model.bind_tools([openai_tool])
 % ============================================================================
 % SLIDE 21: Tool Calling Lifecycle Diagram
 % ============================================================================
-\begin{frame}[fragile]{Tool Calling Lifecycle (TikZ Diagram)}
-\vspace{-0.5cm}
+\begin{frame}[fragile,shrink=3]{Tool Calling Lifecycle (TikZ Diagram)}
+\vspace{-0.25cm}
 \begin{center}
 \begin{tikzpicture}[node distance=1.5cm, scale=0.85]
   % States
@@ -672,14 +674,14 @@ model_with_tool = model.bind_tools([openai_tool])
   \node[left=1.5cm of response] {\small \color{gray}final};
 \end{tikzpicture}
 \end{center}
-\vspace{-0.5cm}
+\vspace{-0.25cm}
 Loop back for follow-up tool calls (agentic behavior).
 \end{frame}
 
 % ============================================================================
 % SLIDE 22: Real-World Example: Simple Agent Loop
 % ============================================================================
-\begin{frame}[fragile]{Real-World Example: Simple Agent Loop}
+\begin{frame}[fragile,shrink=3]{Real-World Example: Simple Agent Loop}
 \begin{codebox}[Tool-Based Agent Loop]
 \begin{lstlisting}
 from langchain.schema import HumanMessage, ToolMessage
@@ -717,7 +719,7 @@ while True:
 % ============================================================================
 % SLIDE 23: Common Pitfall #1: Missing Descriptions
 % ============================================================================
-\begin{frame}[fragile]{Pitfall \#1: Missing or Vague Descriptions}
+\begin{frame}[fragile,shrink=2]{Pitfall \#1: Missing or Vague Descriptions}
 \begin{warningbox}[The Problem]
 LLM doesn't know when to use your tool if description is missing or vague.
 \end{warningbox}
@@ -750,7 +752,7 @@ def retrieve_document(doc_id: str) -> str:
 % ============================================================================
 % SLIDE 24: Common Pitfall #2: Wrong Type Annotations
 % ============================================================================
-\begin{frame}[fragile]{Pitfall \#2: Missing or Wrong Type Annotations}
+\begin{frame}[fragile,shrink=2]{Pitfall \#2: Missing or Wrong Type Annotations}
 \begin{warningbox}[The Problem]
 Without type hints, schema generation fails or becomes ambiguous.
 \end{warningbox}
@@ -783,7 +785,7 @@ def process(data: List[str]) -> str:
 % ============================================================================
 % SLIDE 25: Common Pitfall #3: Not Returning ToolMessage
 % ============================================================================
-\begin{frame}[fragile]{Pitfall \#3: Forgetting ToolMessage in Chains}
+\begin{frame}[fragile,shrink=2]{Pitfall \#3: Forgetting ToolMessage in Chains}
 \begin{warningbox}[The Problem]
 If you don't wrap tool results in ToolMessage, the LLM can't properly track which result belongs to which tool.
 \end{warningbox}
@@ -816,7 +818,7 @@ messages.append(
 % ============================================================================
 % SLIDE 26: Common Pitfall #4: Throwing Exceptions
 % ============================================================================
-\begin{frame}[fragile]{Pitfall \#4: Raising Exceptions Instead of Returning Errors}
+\begin{frame}[fragile,shrink=2]{Pitfall \#4: Raising Exceptions Instead of Returning Errors}
 \begin{warningbox}[The Problem]
 Exceptions break the tool calling loop. Return errors as strings instead.
 \end{warningbox}
@@ -849,7 +851,7 @@ def risky_operation(x: int) -> str:
 % ============================================================================
 % SLIDE 27: Common Pitfall #5: Tool with Side Effects
 % ============================================================================
-\begin{frame}[fragile]{Pitfall \#5: Tools with Unintended Side Effects}
+\begin{frame}[fragile,shrink=2]{Pitfall \#5: Tools with Unintended Side Effects}
 \begin{warningbox}[The Problem]
 Avoid tools that modify state unexpectedly. LLM might call them multiple times.
 \end{warningbox}
@@ -884,7 +886,7 @@ def get_user_balance(user_id: str) -> str:
 % ============================================================================
 % SLIDE 28: Tool Composition with LCEL
 % ============================================================================
-\begin{frame}[fragile]{Tool Composition with LCEL}
+\begin{frame}[fragile,shrink=2]{Tool Composition with LCEL}
 \begin{codebox}[Compose Tools in Chains]
 \begin{lstlisting}
 from langchain_core.runnables import RunnablePassthrough
@@ -917,7 +919,7 @@ Tools integrate naturally with LCEL chains.
 % ============================================================================
 % SLIDE 29: Advanced: Tool Retry Logic
 % ============================================================================
-\begin{frame}[fragile]{Advanced: Retry Logic for Tools}
+\begin{frame}[fragile,shrink=2]{Advanced: Retry Logic for Tools}
 \begin{codebox}[Implement Tool Retries]
 \begin{lstlisting}
 from tenacity import retry, stop_after_attempt
@@ -942,7 +944,7 @@ Combine LangChain tools with libraries like Tenacity for resilience.
 % ============================================================================
 % SLIDE 30: Tool Monitoring and Logging
 % ============================================================================
-\begin{frame}[fragile]{Monitoring and Logging Tool Calls}
+\begin{frame}[fragile,shrink=2]{Monitoring and Logging Tool Calls}
 \begin{codebox}[Log Tool Invocations]
 \begin{lstlisting}
 import logging
@@ -971,7 +973,7 @@ Track tool usage for debugging and analytics.
 % ============================================================================
 % SLIDE 31: Tool Return Types and Serialization
 % ============================================================================
-\begin{frame}[fragile]{Return Types: What Tools Should Return}
+\begin{frame}[fragile,shrink=2]{Return Types: What Tools Should Return}
 \begin{codebox}[Return Types]
 \begin{lstlisting}
 from typing import Dict, List
@@ -1001,7 +1003,7 @@ Tools should return strings. Convert objects to JSON if needed.
 % ============================================================================
 % SLIDE 32: Tool Testing
 % ============================================================================
-\begin{frame}[fragile]{Testing Tools Independently}
+\begin{frame}[fragile,shrink=2]{Testing Tools Independently}
 \begin{codebox}[Unit Test Your Tools]
 \begin{lstlisting}
 from langchain.tools import tool
@@ -1038,7 +1040,7 @@ Test tools like normal Python functions.
 % SLIDE 33: Best Practices Summary
 % ============================================================================
 \begin{frame}[fragile]{Tool Design Best Practices}
-\begin{enumerate}
+\begin{enumerate}\setlength{\itemsep}{1pt}
   \item \textbf{Clear descriptions}: Explain when to use the tool
   \item \textbf{Type annotations}: All parameters must have types
   \item \textbf{Good docstrings}: Include use cases in the docstring
@@ -1055,7 +1057,7 @@ Test tools like normal Python functions.
 % ============================================================================
 % SLIDE 34: Quick Reference / Cheat Sheet
 % ============================================================================
-\begin{frame}[fragile]{Quick Reference: Tools Cheat Sheet}
+\begin{frame}[fragile,shrink=2]{Quick Reference: Tools Cheat Sheet}
 \begin{codebox}[The @tool Decorator Way (Quickest)]
 \begin{lstlisting}
 from langchain.tools import tool
@@ -1089,25 +1091,25 @@ tool = StructuredTool.from_function(
 % SLIDE 35: Self-Check Questions
 % ============================================================================
 \begin{frame}[fragile]{Self-Check: Do You Understand?}
-\begin{enumerate}
+\begin{enumerate}\setlength{\itemsep}{1pt}
   \item What's the difference between \texttt{@tool} and \texttt{StructuredTool}?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item \texttt{@tool}: Decorator for simple tools from functions (infers schema from type hints)
       \item \texttt{StructuredTool}: Explicit for complex tools with custom Pydantic schemas
     \end{itemize}
 
   \item What must you return after tool execution?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item \texttt{ToolMessage(content=result, tool\_call\_id=...)}
     \end{itemize}
 
   \item Why do tools need descriptions?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item LLM uses descriptions to decide when to call the tool
     \end{itemize}
 
   \item What happens if you raise an exception in a tool?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item The tool calling loop breaks; return errors as strings instead
     \end{itemize}
 \end{enumerate}
@@ -1117,25 +1119,25 @@ tool = StructuredTool.from_function(
 % SLIDE 36: Self-Check Questions (Continued)
 % ============================================================================
 \begin{frame}[fragile]{Self-Check: More Questions}
-\begin{enumerate}
+\begin{enumerate}\setlength{\itemsep}{1pt}
   \setcounter{enumi}{4}
   \item How do you attach tools to a model?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Use \texttt{model.bind\_tools([tool1, tool2, ...])}, returns a new model with tools bound
     \end{itemize}
 
   \item What's the purpose of \texttt{tool\_choice="required"}?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Forces the LLM to always call a tool (useful for agentic loops)
     \end{itemize}
 
   \item Can tools be called asynchronously?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Yes, define them as \texttt{async def} and use \texttt{.ainvoke()}
     \end{itemize}
 
   \item What's an idempotent tool?
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item One that returns the same result when called multiple times; safe for LLM retries
     \end{itemize}
 \end{enumerate}
@@ -1152,7 +1154,7 @@ Tools are how LLMs move from passive text generation to active interaction with 
 \vfill
 
 \begin{tipbox}[Three Patterns]
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item \textbf{@tool}: Quick decorator for simple functions
   \item \textbf{StructuredTool}: Explicit schemas for complex tools
   \item \textbf{bind\_tools()}: Attach tools to models for calling
@@ -1170,21 +1172,21 @@ LLM \textbf{decides} to call a tool, but \textbf{you} execute it and return Tool
 % SLIDE 38: What's Next?
 % ============================================================================
 \begin{frame}[fragile]{What's Next?}
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item \textbf{Section 05: Agents}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Agentic loops that autonomously use tools to solve problems
       \item Agent frameworks: ReAct, MRKL, conversational agents
     \end{itemize}
 
   \item \textbf{Section 11: LangGraph}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Structured control flow for tool-using applications
       \item State machines and multi-step reasoning
     \end{itemize}
 
   \item \textbf{Section 10: Callbacks \& Monitoring}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Track tool invocations, trace execution
     \end{itemize}
 \end{itemize}
@@ -1198,21 +1200,21 @@ Tools are the foundation for everything that follows!
 % SLIDE 39: References and Further Reading
 % ============================================================================
 \begin{frame}[fragile]{References \& Further Reading}
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item \textcolor{lcblue}{\textbf{Official LangChain Docs}}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item Tools: \texttt{https://python.langchain.com/docs/modules/tools/}
       \item Tool usage: \texttt{https://python.langchain.com/docs/modules/tools/tool\_use/}
     \end{itemize}
 
   \item \textcolor{lcblue}{\textbf{LangChain API Reference}}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item \texttt{langchain.tools}: Decorators and classes
       \item \texttt{langchain.schema}: Message types (ToolMessage)
     \end{itemize}
 
   \item \textcolor{lcblue}{\textbf{Agent Patterns}}
-    \begin{itemize}\small
+    \begin{itemize}\setlength{\itemsep}{1pt}\small
       \item ReAct paper: Yao et al., 2022
       \item Tool use with Claude: \texttt{https://docs.anthropic.com/}
     \end{itemize}
@@ -1232,7 +1234,7 @@ Tools are the foundation for everything that follows!
 \vfill
 
 \normalsize
-\begin{itemize}
+\begin{itemize}\setlength{\itemsep}{1pt}
   \item What tools are and why they matter
   \item How to create tools with decorators and schemas
   \item How to bind tools to models

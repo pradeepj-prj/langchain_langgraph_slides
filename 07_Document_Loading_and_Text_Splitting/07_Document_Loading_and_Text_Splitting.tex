@@ -19,10 +19,10 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
 
 \lstset{
   basicstyle=\ttfamily\scriptsize,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -57,9 +59,11 @@
 % Slide 2: Section Overview
 \begin{frame}{Section Overview}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Why it matters:} Data ingestion is the foundation of RAG pipelines
     \item \textbf{Learning objectives:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Understand the Document ingestion pipeline
       \item Load documents from various sources
       \item Split documents intelligently for retrieval
@@ -93,6 +97,7 @@
 
   \vspace{1.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Load:} Retrieve raw documents from various sources
     \item \textbf{Split:} Break documents into manageable chunks
     \item \textbf{Embed:} Convert text to vector representations
@@ -102,29 +107,22 @@
 
 % Slide 4: The Document Object
 \begin{frame}[fragile]{The Document Object}
-  Core data structure in LangChain:
-  \begin{lstlisting}
+  \small
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_core.documents import Document
-
 doc = Document(
-    page_content="Some text content",
-    metadata={
-        "source": "example.pdf",
-        "page": 1,
-        "author": "John Doe"
-    }
+  page_content="Some text",
+  metadata={"source": "example.pdf", "page": 1}
 )
-
-print(doc.page_content)  # The actual text
-print(doc.metadata)       # Dict of metadata
+print(doc.page_content)
   \end{lstlisting}
 
-  \vspace{0.5cm}
   \begin{conceptbox}{Key Aspects}
     \begin{itemize}
-      \item \texttt{page\_content}: String containing the actual text
-      \item \texttt{metadata}: Dictionary of arbitrary key-value pairs
-      \item Metadata \textbf{must} be preserved through the pipeline for traceability
+    \setlength{\itemsep}{1pt}
+      \item \texttt{page\_content}: Actual text
+      \item \texttt{metadata}: Arbitrary key-value pairs
+      \item Metadata preserved through pipeline
     \end{itemize}
   \end{conceptbox}
 \end{frame}
@@ -150,6 +148,7 @@ class BaseLoader(BaseModel):
   \vspace{0.5cm}
   \begin{tipbox}{Two Load Modes}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item \texttt{load()}: Return all documents at once (for small datasets)
       \item \texttt{lazy\_load()}: Stream documents (for large datasets, memory efficient)
     \end{itemize}
@@ -173,6 +172,7 @@ for doc in loader.lazy_load():
   \vspace{0.5cm}
   \begin{conceptbox}{Use Cases}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item .txt, .log, configuration files
       \item Source code files
       \item Simple documents without formatting
@@ -199,6 +199,7 @@ for doc in documents:
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Automatically extracts metadata (page number, file path)
     \item One \texttt{Document} per PDF page
     \item Preserves text structure from PDF
@@ -226,6 +227,7 @@ for doc in documents:
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Converts each CSV row to structured text
     \item Can specify which column contains the ``source''
     \item Useful for structured data like product catalogs
@@ -254,6 +256,7 @@ for doc in documents:
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Strips HTML, keeps text content
     \item Preserves source URL in metadata
     \item Great for knowledge base ingestion
@@ -280,6 +283,7 @@ print(f"Loaded {len(documents)} documents")
   \vspace{0.5cm}
   \begin{conceptbox}{Features}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Use glob patterns to filter files
       \item Specify which loader class to use
       \item Supports recursive directory traversal (\texttt{**})
@@ -340,8 +344,10 @@ class CustomLoader(BaseLoader):
 % Slide 13: Why Text Splitting Matters
 \begin{frame}{Why Text Splitting Matters}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Context windows are limited}: LLMs have finite token limits
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item GPT-4: 8K, 32K, or 128K tokens
       \item Claude: 100K+ tokens
       \item Splitting ensures chunks fit in context
@@ -394,6 +400,7 @@ chunks = splitter.split_documents(documents)
   \vspace{1cm}
   \begin{conceptbox}{Why Recursive?}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Preserves semantic structure (paragraphs → lines → words)
       \item Better context preservation than naive splitting
       \item Handles documents with mixed formatting
@@ -403,10 +410,12 @@ chunks = splitter.split_documents(documents)
 
 % Slide 16: Chunk Size and Overlap Tuning
 \begin{frame}{Chunk Size and Overlap --- How to Choose}
-  \vspace{0.3cm}
+  \vspace{0.15cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{chunk\_size} (characters or tokens):
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Typical range: 512 to 2048 characters
       \item For dense docs: 500-800 chars (3-5 sentences)
       \item For sparse docs: 1000-2000 chars (longer context)
@@ -415,6 +424,7 @@ chunks = splitter.split_documents(documents)
 
     \item \textbf{chunk\_overlap} (characters or tokens):
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Typical: 10-25 percent of chunk\_size
       \item Preserves context across chunk boundaries
       \item 200 overlap on 1000 chunk = 20 percent
@@ -468,6 +478,7 @@ chunks = splitter.split_text(code)
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Supports: Python, JavaScript, TypeScript, Java, C++, Go, Rust, and more
     \item Uses language-specific separators (imports, class definitions, functions)
     \item Critical for code QA and documentation systems
@@ -502,8 +513,10 @@ for chunk in chunks:
 % Slide 20: Metadata Best Practices
 \begin{frame}{Metadata Best Practices}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Always preserve original metadata:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Source file/URL
       \item Page/section number
       \item Author, timestamp
@@ -511,6 +524,7 @@ for chunk in chunks:
 
     \item \textbf{Add processing metadata:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Chunk ID, chunk order
       \item Loader class name
       \item Processing timestamp
@@ -518,6 +532,7 @@ for chunk in chunks:
 
     \item \textbf{Use for traceability:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Link retrieved chunks back to source
       \item Support citations in LLM responses
       \item Debug retrieval quality issues
@@ -583,6 +598,7 @@ for chunk in chunks:
   \vspace{1cm}
   \begin{warningbox}{Solution}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Estimate model's usable context: $0.25 \times \text{context\_window}$
       \item Start with default 1000, measure retrieval quality
       \item Use metrics: relevance score, response coherence, latency
@@ -685,6 +701,7 @@ for doc in loader.lazy_load():
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Avoids loading entire document into memory
     \item Process and store in batches
     \item Critical for PDFs with hundreds of pages
@@ -739,6 +756,7 @@ with get_openai_callback() as cb:
   \vspace{0.5cm}
   \textbf{Encoding names:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \texttt{cl100k\_base}: GPT-4, GPT-3.5-turbo
     \item \texttt{p50k\_base}: GPT-3
     \item \texttt{r50k\_base}: Text-davinci-003
@@ -798,14 +816,17 @@ if not all(chunks[0].metadata for chunk in chunks):
 % Slide 31: Performance Considerations
 \begin{frame}{Performance Tuning}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Loading:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Use \texttt{lazy\_load()} for large files
       \item Batch processing with \texttt{DirectoryLoader}
     \end{itemize}
 
     \item \textbf{Splitting:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item \texttt{RecursiveCharacterTextSplitter} is fast (CPU only)
       \item \texttt{TokenTextSplitter} slower (requires tokenizer)
       \item Larger overlap = more chunks (exponential storage cost)
@@ -813,12 +834,14 @@ if not all(chunks[0].metadata for chunk in chunks):
 
     \item \textbf{Embedding:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Batch API calls (embed multiple chunks at once)
       \item Cache embeddings to avoid recomputing
     \end{itemize}
 
     \item \textbf{Storage:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Use vector DB pagination for large collections
       \item Monitor memory usage with \texttt{lazy\_load()}
     \end{itemize}
@@ -873,6 +896,7 @@ for chunk in chunks:
 
   \vspace{0.5cm}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Use \texttt{jq} syntax to extract relevant data
     \item Good for API responses, databases exported as JSON
   \end{itemize}
@@ -880,43 +904,37 @@ for chunk in chunks:
 
 % Slide 34: Cheat Sheet - Common Patterns
 \begin{frame}[fragile]{Cheat Sheet: Common Patterns}
-  \tiny
-  \begin{lstlisting}
-# 1. Simple PDF -> Chunks
+  \scriptsize
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 docs = PyPDFLoader("file.pdf").load()
-chunks = RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(docs)
-
-# 2. Directory of PDFs -> Chunks
-loader = DirectoryLoader("pdfs/", glob="**/*.pdf", loader_cls=PyPDFLoader)
-chunks = RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(
-    [doc for doc in loader.lazy_load()])
-
-# 3. Multiple sources
-from langchain_community.document_loaders import WebBaseLoader
+chunks = RecursiveCharacterTextSplitter(
+    chunk_size=1000).split_documents(docs)
+loader = DirectoryLoader("pdfs/", glob="**/*.pdf",
+    loader_cls=PyPDFLoader)
+from langchain_community.document_loaders \
+  import WebBaseLoader
 urls_docs = WebBaseLoader(urls).load()
-file_docs = TextLoader("file.txt").load()
 all_docs = urls_docs + file_docs
-chunks = RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(all_docs)
-
-# 4. Token-based splitting (precise)
-chunks = TokenTextSplitter(encoding_name="cl100k_base", chunk_size=100).split_documents(docs)
-
-# 5. Stream large files
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000)
+chunks = splitter.split_documents(all_docs)
+splitter = TokenTextSplitter(
+    encoding_name="cl100k_base", chunk_size=100)
 for doc in PyPDFLoader("huge.pdf").lazy_load():
-    chunks = RecursiveCharacterTextSplitter(chunk_size=1000).split_documents([doc])
-    # Process/store immediately
+    chunks = splitter.split_documents([doc])
   \end{lstlisting}
 \end{frame}
 
 % Slide 35: Self-Check Questions 1-3
 \begin{frame}{Self-Check: Questions 1-3}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item \textbf{Document Object:} What are the two main attributes of a LangChain \texttt{Document}? Why must metadata be preserved?
 
-    \vspace{0.8cm}
+    \vspace{0.4cm}
     \item \textbf{Splitting Strategy:} Why does \texttt{RecursiveCharacterTextSplitter} work better than simple \texttt{CharacterTextSplitter}? Name the separator hierarchy.
 
-    \vspace{0.8cm}
+    \vspace{0.4cm}
     \item \textbf{Chunk Size:} You're building a RAG system with GPT-4 (128K context). What chunk size would you start with and why? What's the relationship to token limits?
   \end{enumerate}
 \end{frame}
@@ -925,12 +943,13 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 \begin{frame}{Self-Check: Questions 4-6}
   \begin{enumerate}
     \setcounter{enumi}{3}
+    \setlength{\itemsep}{0pt}
     \item \textbf{Loaders:} Describe the difference between \texttt{load()} and \texttt{lazy\_load()}. When would you use each?
 
-    \vspace{0.8cm}
+    \vspace{0.4cm}
     \item \textbf{Metadata Pitfall:} What's the difference between \texttt{split\_text()} and \texttt{split\_documents()}? Which one preserves metadata?
 
-    \vspace{0.8cm}
+    \vspace{0.4cm}
     \item \textbf{Large Files:} How would you process a 500-page PDF to avoid running out of memory? Describe the pipeline.
   \end{enumerate}
 \end{frame}
@@ -939,9 +958,10 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 \begin{frame}{Self-Check: Questions 7-8}
   \begin{enumerate}
     \setcounter{enumi}{6}
+    \setlength{\itemsep}{0pt}
     \item \textbf{Token-Based Splitting:} Why might \texttt{TokenTextSplitter} be more accurate than character-based splitting? What encoding names do GPT-4 models use?
 
-    \vspace{1.2cm}
+    \vspace{0.6cm}
     \item \textbf{Integration:} Write pseudocode for a complete pipeline: load PDFs from \texttt{./docs/} directory, split with overlap, embed, and store in a vector database.
   \end{enumerate}
 \end{frame}
@@ -949,6 +969,7 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 % Slide 38: Key Takeaways
 \begin{frame}{Key Takeaways}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{The pipeline matters:} Load → Split → Embed → Store are interdependent
 
     \item \textbf{Document object is sacred:} Always preserve metadata through all stages
@@ -966,8 +987,10 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 % Slide 39: Next Steps & Resources
 \begin{frame}{Next Steps \& Resources}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Practice:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Load a PDF, split it, inspect chunks and metadata
       \item Experiment with chunk\_size and overlap values
       \item Build a small RAG prototype with your own documents
@@ -975,6 +998,7 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 
     \item \textbf{Resources:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item LangChain Docs: \texttt{python.langchain.com/docs/modules/data\_connection}
       \item Token counter: \texttt{platform.openai.com/tokenizer}
       \item OpenAI context limits: \texttt{platform.openai.com/docs/models}
@@ -982,6 +1006,7 @@ for doc in PyPDFLoader("huge.pdf").lazy_load():
 
     \item \textbf{Advanced topics:}
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Semantic chunking (chunk by meaning, not size)
       \item Hybrid search (keyword + vector)
       \item Document hierarchy and parent-child retrieval

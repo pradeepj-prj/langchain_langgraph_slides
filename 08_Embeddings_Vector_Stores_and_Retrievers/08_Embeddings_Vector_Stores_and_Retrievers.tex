@@ -19,13 +19,13 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=1pt,bottom=1pt,left=3pt,right=3pt}
 
 \lstset{
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\tiny,
   backgroundcolor=\color{codebg},
   breaklines=true,
   frame=single,
@@ -36,8 +36,10 @@
   language=Python,
   showstringspaces=false,
   tabsize=2,
-  xleftmargin=2pt,
-  xrightmargin=2pt,
+  xleftmargin=1pt,
+  xrightmargin=1pt,
+  aboveskip=1pt,
+  belowskip=1pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -56,6 +58,7 @@
 % Frame 2: Table of Contents
 \begin{frame}{Roadmap: Embeddings, Vector Stores \& Retrievers}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Mental Model:} The semantic search pipeline
     \item \textbf{Embeddings:} Converting text to vectors, similarity
     \item \textbf{The Embeddings Interface:} Core methods and providers
@@ -64,7 +67,7 @@
     \item \textbf{Advanced Patterns:} Multi-query, compression, ensemble
     \item \textbf{Performance \& Pitfalls:} Real-world considerations
   \end{itemize}
-  \vspace{0.5cm}
+  \vspace{0.05cm}
   \textcolor{lcblue}{\textbf{Goal:}} Build production-ready retrieval pipelines
 \end{frame}
 
@@ -100,7 +103,7 @@
     \draw[->, thick] (qvector) -- (search);
     \draw[->, thick] (search) -- (results);
   \end{tikzpicture}
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{conceptbox}[Key Insight]
     Documents and queries are converted to vectors in the \emph{same} embedding space.\\
     Similarity = semantic relatedness in vector space.
@@ -110,12 +113,13 @@
 % Frame 4: What Are Embeddings?
 \begin{frame}{What Are Embeddings? Text \textrightarrow\ Vectors}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Embedding:} A dense vector representation of text
     \item Captures \emph{semantic meaning}, not just bag-of-words
     \item Example dimensions: 384 (small), 1536 (OpenAI text-embedding-3-small), 3072 (text-embedding-3-large)
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{center}
     \begin{tikzpicture}[scale=0.8]
       \node[text width=4cm, align=center] (text) {``A cat is sleeping on the mat''};
@@ -125,7 +129,7 @@
     \end{tikzpicture}
   \end{center}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{tipbox}[Semantic Similarity]
     \textbf{``A cat rests on the floor''} produces a \emph{nearby} vector $\rightarrow$ high cosine similarity.\\
     \textbf{``The weather is sunny today''} produces a \emph{distant} vector $\rightarrow$ low cosine similarity.
@@ -133,7 +137,7 @@
 \end{frame}
 
 % Frame 5: The Embeddings Interface
-\begin{frame}[fragile]{The Embeddings Interface: Core Methods}
+\begin{frame}[fragile,shrink=15]{The Embeddings Interface: Core Methods}
   \begin{conceptbox}[API Contract]
     All embedding providers implement the same interface:
   \end{conceptbox}
@@ -157,7 +161,7 @@ class Embeddings(ABC):
         pass
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \docref{langchain-core.embeddings}
 \end{frame}
 
@@ -186,7 +190,7 @@ query_vector = embeddings.embed_query(query)
 print(f"Query vector dimension: {len(query_vector)}")
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \docref{langchain-openai.embeddings}
 \end{frame}
 
@@ -203,7 +207,7 @@ emb = AnthropicEmbeddings(
 )
     \end{lstlisting}
 
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \textbf{HuggingFace (remote):}
     \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_huggingface import \
@@ -222,7 +226,7 @@ emb = OllamaEmbeddings(
 )
     \end{lstlisting}
 
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \textbf{Cohere:}
     \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_cohere import CohereEmbeddings
@@ -232,7 +236,7 @@ emb = CohereEmbeddings(
     \end{lstlisting}
   \end{columns}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{warningbox}[Note]
     Local embeddings (HuggingFace, Ollama) = free but slower. Cloud = faster but costs per API call.
   \end{warningbox}
@@ -255,7 +259,7 @@ emb = CohereEmbeddings(
     \bottomrule
   \end{tabular}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{tipbox}[Selection Guide]
     \textbf{Prototyping:} all-MiniLM-L6-v2 (fast, free)\\
     \textbf{Production:} text-embedding-3-small (quality/cost)\\
@@ -268,115 +272,82 @@ emb = CohereEmbeddings(
   \begin{conceptbox}[Definition]
     A \textbf{vector store} is a database optimized for:
     \begin{itemize}
+    \setlength{\itemsep}{1pt}
       \item Storing high-dimensional dense vectors
       \item Fast \emph{approximate} nearest-neighbor (ANN) search
       \item Associating vectors with metadata (source, page, etc.)
     \end{itemize}
   \end{conceptbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{How it works:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Index documents: convert texts to vectors, build search structure
     \item Query: embed user query, find nearest vectors
     \item Return: top-K matching documents with metadata
   \end{enumerate}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{warningbox}[ANN vs Exact Search]
     Vector stores use \emph{approximate} search (faster, slightly less accurate) not exhaustive search.
   \end{warningbox}
 \end{frame}
 
 % Frame 10: FAISS - In-Memory Vector Store
-\begin{frame}[fragile]{FAISS: In-Memory Vector Store for Prototyping}
-  \begin{lstlisting}
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-
+\begin{frame}[fragile]{FAISS: In-Memory Vector Store}
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
+from langchain_community.vectorstores \
+  import FAISS
 embeddings = OpenAIEmbeddings()
-
-# Create vector store from documents
-documents = [
-    "LangChain enables RAG applications",
-    "Embeddings enable semantic search",
-    "Vector stores index documents efficiently"
-]
-
+documents = ["RAG applications", "semantic search",
+  "index documents efficiently"]
 vector_store = FAISS.from_texts(
-    documents, embeddings
-)
-
-# Similarity search
+  documents, embeddings)
 results = vector_store.similarity_search(
-    "semantic search", k=2
-)
-for doc in results:
-    print(f"Content: {doc.page_content}")
+  "semantic search", k=2)
   \end{lstlisting}
 
-  \vspace{0.2cm}
-  \textbf{Pros:} Fast, in-memory, no setup. \quad \textbf{Cons:} Not persistent, single-machine.
+  \textbf{Pros:} Fast, in-memory. \textbf{Cons:} Not persistent.
 \end{frame}
 
 % Frame 11: Chroma - Persistent Local Vector Store
 \begin{frame}[fragile]{Chroma: Persistent Local Vector Store}
-  \begin{lstlisting}
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
-
 embeddings = OpenAIEmbeddings()
-
-# Create/load persistent collection
 vector_store = Chroma(
-    collection_name="my_docs",
-    embedding_function=embeddings,
-    persist_directory="./chroma_db"  # Saved to disk
+  collection_name="my_docs",
+  embedding_function=embeddings,
+  persist_directory="./chroma_db"
 )
-
-# Add documents with metadata
 vector_store.add_documents([
-    Document(
-        page_content="...",
-        metadata={"source": "doc1.pdf", "page": 5}
-    )
+  Document(page_content="...",
+    metadata={"source": "doc1.pdf"})
 ])
-
-# Search (persists across sessions)
 results = vector_store.similarity_search("query")
   \end{lstlisting}
 
-  \vspace{0.2cm}
-  \textbf{Pros:} Persistent, local, metadata filtering. \quad \textbf{Cons:} Single-machine, limited scale.
+  \textbf{Pros:} Persistent, local. \textbf{Cons:} Limited scale.
 \end{frame}
 
 % Frame 12: Pinecone - Managed Cloud Vector Store
 \begin{frame}[fragile]{Pinecone: Managed Cloud Vector Store}
-  \begin{lstlisting}
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_pinecone import PineconeVectorStore
-from langchain_openai import OpenAIEmbeddings
-import os
-
 embeddings = OpenAIEmbeddings()
-
-# Connect to Pinecone (requires API key)
 vector_store = PineconeVectorStore(
-    index_name="my-index",
-    embedding=embeddings,
-    namespace="production"
+  index_name="my-index",
+  embedding=embeddings,
+  namespace="production"
 )
-
-# Add documents (synced to Pinecone servers)
 vector_store.add_documents(documents)
-
-# Search across distributed index
 results = vector_store.similarity_search(
-    "machine learning", k=5
+  "machine learning", k=5
 )
   \end{lstlisting}
 
-  \vspace{0.2cm}
-  \textbf{Pros:} Fully managed, scales to billions, enterprise features. \quad \textbf{Cons:} Monthly cost, vendor lock-in.
+  \textbf{Pros:} Managed, scales. \textbf{Cons:} Cost.
 \end{frame}
 
 % Frame 13: Vector Store Operations
@@ -409,7 +380,7 @@ for doc, score in results_with_scores:
     print(f"Score: {score:.3f}, Content: {doc.page_content}")
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \docref{vector-stores}
 \end{frame}
 
@@ -444,7 +415,7 @@ print(result["answer"])
 \end{frame}
 
 % Frame 15: The Retriever Interface
-\begin{frame}{The Retriever Interface and How It Works}
+\begin{frame}[shrink=8]{The Retriever Interface and How It Works}
   \begin{conceptbox}[Retriever API]
     All retrievers implement one core method:
     \begin{center}
@@ -453,16 +424,17 @@ print(result["answer"])
     Returns a list of documents ranked by relevance.
   \end{conceptbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Key points:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Retrievers are \emph{pluggable} — swap implementations without changing downstream code
     \item Input: a string query
     \item Output: ordered list of relevant \texttt{Document} objects
     \item Used by chains, agents, and RAG systems to fetch context
   \end{enumerate}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{tipbox}[Design Benefit]
     Same interface works for vector stores, BM25, web search, databases, etc.\\
     Encourages composable, testable retrieval systems.
@@ -479,7 +451,7 @@ results = vector_store.similarity_search("topic", k=3)
 
   \textbf{Problem:} Top results may be redundant (say the same thing).
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \textbf{MMR:} Maximizes relevance \emph{and} diversity.
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 retriever = vector_store.as_retriever(
@@ -490,7 +462,7 @@ results = retriever.get_relevant_documents("topic")
 # fetch_k=10 candidates, return k=3 most diverse
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \begin{tipbox}[When to Use MMR]
     Use MMR for synthesis tasks (survey, comparison) where diversity matters.\\
     Use similarity search for direct QA where relevance is paramount.
@@ -527,7 +499,7 @@ retriever = vector_store.as_retriever(
 results = retriever.get_relevant_documents("query")
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \textbf{Note:} Filter syntax varies by vector store (Chroma, Pinecone, etc.).
 \end{frame}
 
@@ -557,7 +529,7 @@ results = multi_query_retriever.get_relevant_documents(
 # Queries: "What is embeddings?", "How do embeddings work?", ...
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \begin{conceptbox}[Why Multi-Query?]
     Different phrasings of the same question retrieve different documents.\\
     More robust, fewer missed results.
@@ -591,7 +563,7 @@ results = compression_retriever.get_relevant_documents(
 )
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \textbf{Benefit:} Reduces token usage by extracting only relevant passages.
 \end{frame}
 
@@ -621,114 +593,85 @@ ensemble = EnsembleRetriever(
 results = ensemble.get_relevant_documents("query")
   \end{lstlisting}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \textbf{Why:} Combines semantic + keyword strengths. More robust results.
 \end{frame}
 
 % Frame 21: TikZ Diagram - Indexing Pipeline
 \begin{frame}{Indexing Pipeline Visualization}
   \begin{tikzpicture}[
-    node distance=1.5cm,
-    every node/.style={draw, rounded corners, minimum width=2.5cm, minimum height=0.7cm, text centered, font=\small},
+    node distance=1.0cm,
+    every node/.style={draw, rounded corners, minimum width=1.8cm, minimum height=0.5cm, text centered, font=\tiny},
     input/.style={fill=lcblue!20, draw=lcblue},
     process/.style={fill=lcorange!20, draw=lcorange},
     storage/.style={fill=lcgreen!20, draw=lcgreen}
   ]
-    % Top row: Indexing
-    \node[input] (raw) {Raw Documents};
-    \node[process, right=of raw] (split) {Text Splitter};
-    \node[process, right=of split] (emb) {Embedding Model};
-    \node[storage, right=of emb] (store) {Vector Store};
+    \node[input] (raw) {Documents};
+    \node[process, right=of raw] (split) {Split};
+    \node[process, right=of split] (emb) {Embed};
+    \node[storage, right=of emb] (store) {Store};
 
-    % Edges
     \draw[->, thick] (raw) -- (split);
     \draw[->, thick] (split) -- (emb);
     \draw[->, thick] (emb) -- (store);
 
-    % Storage details
-    \node[below=1.2cm of store, text width=2cm, font=\tiny] (details) {
-      \begin{tabular}{ll}
-        Vector & Doc ID \\
-        Meta & Source
-      \end{tabular}
-    };
-    \draw[dashed, lcgreen] (store.south) -- (details.north);
+    \node[input, below=1.8cm of raw] (query) {Query};
+    \node[process, right=of query] (qemb) {Embed};
+    \node[process, right=of qemb] (search) {Search};
+    \node[storage, right=of search] (results) {Results};
 
-    % Bottom row: Retrieval
-    \node[input, below=2.5cm of raw] (query) {User Query};
-    \node[process, right=of query] (qemb) {Embedding Model};
-    \node[process, right=of qemb] (search) {ANN Search};
-    \node[storage, right=of search] (results) {Top-K Docs};
-
-    % Edges
     \draw[->, thick] (query) -- (qemb);
     \draw[->, thick] (qemb) -- (search);
     \draw[dashed, thick, lcgreen] (store) -- (search);
     \draw[->, thick] (search) -- (results);
   \end{tikzpicture}
 
-  \vspace{0.3cm}
-  \textbf{Key:} Documents and queries use the \emph{same} embedding model.
+  \textbf{Key:} Same embedding for docs and queries.
 \end{frame}
 
 % Frame 22: Retrieval Pipeline in Detail
-\begin{frame}{Retrieval Pipeline in Detail}
-  \begin{tikzpicture}[
-    node distance=1.2cm,
-    every node/.style={draw, rounded corners, minimum width=2.2cm, minimum height=0.65cm, text centered, font=\small},
+\begin{frame}{Retrieval Pipeline}
+  \begin{tikzpicture}[scale=0.85,
+    node distance=0.7cm,
+    every node/.style={draw, rounded corners, minimum width=1.5cm, minimum height=0.45cm, text centered, font=\tiny},
     input/.style={fill=lcblue!20, draw=lcblue},
     process/.style={fill=lcorange!20, draw=lcorange},
     output/.style={fill=lcgreen!20, draw=lcgreen}
   ]
-    % Query processing
-    \node[input] (query) {Input Query};
-    \node[process, below=of query] (preprocess) {Preprocess};
-    \node[process, below=of preprocess] (embed) {Embed};
+    \node[input] (query) {Query};
+    \node[process, below=of query] (embed) {Embed};
+    \node[process, below=of embed] (search) {Search};
+    \node[output, below=of search] (final) {Results};
 
-    % Search
-    \node[process, below=of embed] (search) {ANN Search};
-
-    % Post-processing
-    \node[process, below=of search] (rerank) {Rerank/Filter};
-    \node[output, below=of rerank] (final) {Final Results};
-
-    % Edges
-    \draw[->, thick] (query) -- (preprocess);
-    \draw[->, thick] (preprocess) -- (embed);
+    \draw[->, thick] (query) -- (embed);
     \draw[->, thick] (embed) -- (search);
-    \draw[->, thick] (search) -- (rerank);
-    \draw[->, thick] (rerank) -- (final);
+    \draw[->, thick] (search) -- (final);
   \end{tikzpicture}
 
-  \vspace{0.3cm}
-  \textbf{Stages:}
-  \begin{enumerate}
-    \item \textbf{Preprocess:} Normalize query (lowercase, strip whitespace)
-    \item \textbf{Embed:} Convert to vector
-    \item \textbf{Search:} Find nearest neighbors in vector store
-    \item \textbf{Rerank:} Apply metadata filters, diversity, LLM scoring
-  \end{enumerate}
+  \textbf{Steps:} Embed query $\to$ Find neighbors $\to$ Return results
 \end{frame}
 
 % Frame 23: Performance Considerations - Index Size
 \begin{frame}{Performance Considerations: Index Size}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Number of documents:} 1K (FAISS OK), 1M+ (Pinecone needed)
     \item \textbf{Vector dimensions:} Higher = more expressive but slower (1536 is practical maximum)
     \item \textbf{Search latency:} Trade-off between accuracy and speed
       \begin{itemize}
+    \setlength{\itemsep}{1pt}
         \item Exact search: O(n) — accurate but slow
         \item HNSW/IVF (approximate): O(log n) — fast but lossy
       \end{itemize}
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{conceptbox}[Memory Cost]
     Storage = (num\_docs × dimensions × 4 bytes) + metadata\\
     Example: 1M docs × 1536 dims × 4 bytes = \textbf{6 GB}
   \end{conceptbox}
 
-  \vspace{0.2cm}
+  \vspace{0.07cm}
   \begin{tipbox}[Optimization Tips]
     Chunk documents (e.g., 300-token chunks) to balance coverage and retrieval precision.\\
     Use quantization (8-bit) to reduce memory 4x at slight accuracy cost.
@@ -739,19 +682,21 @@ results = ensemble.get_relevant_documents("query")
 \begin{frame}{Performance Considerations: Embedding Cost}
   \textbf{Pricing breakdown (OpenAI text-embedding-3-small):}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \$0.02 per 1 million tokens
     \item Indexing: ~4000 words = 5000 tokens = \$0.0001
     \item For 100K documents: \textbf{\$10 one-time cost}
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Query embedding cost:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item Each query = ~100 tokens = \$0.000002
     \item Negligible at scale
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{warningbox}[Cost Optimization]
     Cache embeddings (don't re-embed the same documents).\\
     Use free local embeddings (HuggingFace) if cost is critical.\\
@@ -763,21 +708,23 @@ results = ensemble.get_relevant_documents("query")
 \begin{frame}{Performance Considerations: Search Latency}
   \textbf{Typical latencies:}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{FAISS (in-memory):} 1--10 ms for 100K docs
     \item \textbf{Chroma (disk-backed):} 10--100 ms
     \item \textbf{Pinecone (cloud):} 100--500 ms (including network)
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Optimization levers:}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Reduce \texttt{k} (fetch fewer results)
     \item Use quantization (trade accuracy for speed)
     \item Shard index across multiple machines
     \item Cache frequent queries
   \end{enumerate}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{tipbox}[Production SLA]
     Target < 200 ms end-to-end (embedding + search + LLM call).\\
     Use ensemble of retrievers + background indexing for <100 ms.
@@ -790,10 +737,10 @@ results = ensemble.get_relevant_documents("query")
     You index documents with embedding model A (1536 dims) but query with model B (384 dims).
   \end{warningbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Problem:} Similarity computation fails or returns meaningless results.
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Solution:}
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 # WRONG: Different models for indexing and querying
@@ -812,12 +759,12 @@ retriever = vector_store.as_retriever()
 \end{frame}
 
 % Frame 27: Common Pitfall 2 - Missing Metadata
-\begin{frame}[fragile]{Common Pitfall 2: Missing or Incomplete Metadata}
+\begin{frame}[fragile,shrink=20]{Common Pitfall 2: Missing or Incomplete Metadata}
   \begin{warningbox}[Error Scenario]
     You index documents without storing source information. Later, results include relevance scores but you don't know where they came from.
   \end{warningbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Solution:}
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_core.documents import Document
@@ -849,17 +796,18 @@ vector_store.add_documents(docs)
 % Frame 28: Common Pitfall 3 - Wrong Similarity Metric
 \begin{frame}[fragile]{Common Pitfall 3: Wrong Similarity Metric}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \textbf{Cosine Similarity:} Standard (most vector stores), works for normalized embeddings
     \item \textbf{Euclidean Distance:} Less common, requires careful scaling
     \item \textbf{Dot Product:} Fast but requires pre-normalized vectors
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{warningbox}[Issue]
     If embeddings are \texttt{float32} unnormalized, Euclidean distance inflates with dimension count.
   \end{warningbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Best practice:} Stick with cosine similarity (default in most libraries).
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 # Most vector stores default to cosine
@@ -880,7 +828,7 @@ results = vector_store.similarity_search(query, k=3)
     Context may be too large for LLM, includes irrelevant sections.
   \end{warningbox}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textbf{Solution: Chunk before indexing}
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -903,6 +851,7 @@ vector_store.add_documents(chunks)
 % Frame 30: Production Checklist
 \begin{frame}{Production Readiness Checklist}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item \textbf{Embedding Model:} Fixed and documented across all services
     \item \textbf{Vector Store Persistence:} Backups, version control for index
     \item \textbf{Metadata Completeness:} Every document has source, date, category
@@ -915,80 +864,42 @@ vector_store.add_documents(chunks)
     \item \textbf{Security:} Secure API keys, data encryption at rest and in transit
   \end{enumerate}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \docref{production-guide}
 \end{frame}
 
 % Frame 31: Real-World Example - RAG Chain
-\begin{frame}[fragile]{Real-World Example: RAG Chain with Retriever}
+\begin{frame}[fragile]{Real-World Example: RAG Chain}
+  \scriptsize
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
-from langchain_chroma import Chroma
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
-
-# Setup
 embeddings = OpenAIEmbeddings()
 vector_store = Chroma(embedding_function=embeddings)
-vector_store.add_documents(my_documents)
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
-
-# Prompt template
-system_prompt = (
-    "You are a helpful assistant. "
-    "Use context to answer: {context}"
-)
+vector_store.add_documents(my_docs)
+retriever = vector_store.as_retriever(k=3)
 prompt = ChatPromptTemplate.from_messages([
-    ("system", system_prompt),
-    ("user", "{input}")
+  ("system","Use context: {context}"),
+  ("user","{input}")
 ])
-
-# Build chain
 llm = ChatOpenAI()
 chain = create_retrieval_chain(
-    retriever,
-    create_stuff_documents_chain(llm, prompt)
-)
-
-# Execute
-result = chain.invoke({"input": "What is embeddings?"})
-print(result["answer"])
+  retriever, create_stuff_chain(llm,prompt))
+result = chain.invoke({"input": "Q?"})
   \end{lstlisting}
 \end{frame}
 
 % Frame 32: Real-World Example - Hybrid Search
-\begin{frame}[fragile]{Real-World Example: Hybrid Search (Vector + Keyword)}
+\begin{frame}[fragile]{Real-World Example: Hybrid Search}
   \begin{lstlisting}[basicstyle=\ttfamily\tiny]
-from langchain.retrievers import EnsembleRetriever
-from langchain_chroma import Chroma
-from langchain_community.retrievers import BM25Retriever
-from langchain_openai import OpenAIEmbeddings
-
-# Vector retriever
 embeddings = OpenAIEmbeddings()
-vector_store = Chroma.from_documents(
-    documents, embeddings
-)
-vector_retriever = vector_store.as_retriever(k=3)
-
-# BM25 (keyword) retriever
-bm25 = BM25Retriever.from_documents(documents)
-bm25.k = 3
-
-# Ensemble with equal weights
+vector = Chroma.from_documents(docs, embeddings)
+bm25 = BM25Retriever.from_documents(docs)
 ensemble = EnsembleRetriever(
-    retrievers=[vector_retriever, bm25],
-    weights=[0.5, 0.5]
-)
-
-# Search uses both methods
-results = ensemble.get_relevant_documents("ML model training")
-# Semantically similar + keyword matches
+  retrievers=[vector.as_retriever(k=3), bm25],
+  weights=[0.5, 0.5])
+results = ensemble.get_relevant_documents("query")
   \end{lstlisting}
 
-  \vspace{0.2cm}
-  \textbf{Benefit:} Handles both semantic and keyword queries robustly.
+  \textbf{Benefit:} Semantic + keyword strengths combined.
 \end{frame}
 
 % Frame 33: Advanced Pattern - Custom Retriever
@@ -1027,6 +938,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
 % Frame 34: Summary - Key Takeaways
 \begin{frame}{Summary: Key Takeaways}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item \textbf{Embeddings} convert text to vectors in a shared semantic space
     \item \textbf{Vector stores} enable fast similarity search for retrieval
     \item \textbf{Retrievers} abstract vector stores behind a common interface
@@ -1036,7 +948,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
     \item \textbf{Advanced patterns} (compression, multi-query, ensemble) improve quality
   \end{enumerate}
 
-  \vspace{0.4cm}
+  \vspace{0.07cm}
   \begin{conceptbox}[RAG Pipeline Formula]
     \textit{Good Embeddings} + \textit{Well-Chunked Documents} + \textit{Robust Retrieval} = \textit{High-Quality Context for LLM}
   \end{conceptbox}
@@ -1045,6 +957,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
 % Frame 35: Cheat Sheet - Quick Reference
 \begin{frame}{Cheat Sheet: Quick Reference}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \texttt{OpenAIEmbeddings(model="text-embedding-3-small")} — Standard choice
     \item \texttt{Chroma(embedding\_function=emb)} — Local persistent store
     \item \texttt{FAISS.from\_texts(texts, emb)} — In-memory prototype
@@ -1054,7 +967,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
     \item \texttt{ContextualCompressionRetriever(...)} — Reduce token usage
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{warningbox}[Debugging Tips]
     Print retrieved documents to check quality: \texttt{print([doc.page\_content for doc in results])}\\
     Check similarity scores: \texttt{similarity\_search\_with\_score(query, k=3)}\\
@@ -1065,40 +978,42 @@ chain = create_retrieval_chain(custom_retriever, llm)
 % Frame 36: Self-Check Questions
 \begin{frame}{Self-Check Questions}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item How do embeddings enable semantic search? Why not just use keyword matching?
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item What is the difference between \texttt{embed\_documents()} and \texttt{embed\_query()}? Why have both?
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item Explain the trade-off between FAISS (in-memory) and Pinecone (managed cloud).
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item What does MMR mean and when would you use it instead of pure similarity search?
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item How does metadata filtering reduce false positives in retrieval?
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item Why is consistent chunking important for embeddings and retrieval?
-    \vspace{0.2cm}
+    \vspace{0.07cm}
     \item Design a retrieval pipeline for a large document corpus (1M+ docs) with < 200ms latency.
   \end{enumerate}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \textit{(See next slide for suggested answers)}
 \end{frame}
 
 % Frame 37: Self-Check Answers
 \begin{frame}{Self-Check Answers (Brief)}
   \begin{enumerate}
+    \setlength{\itemsep}{0pt}
     \item Embeddings capture \emph{semantic meaning} (synonyms, related concepts); keywords match only exact terms.
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item \texttt{embed\_documents()} batches for efficiency; \texttt{embed\_query()} signals intent (may be optimized differently).
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item FAISS: fast, free, single-machine; Pinecone: scalable, managed, costs money.
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item MMR adds diversity: useful for synthesis, summaries. Similarity search for direct QA.
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item Filters (e.g., by source, date) exclude irrelevant results early, reducing noise.
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item Consistent chunk size ensures stable semantic meaning and retrieval quality.
-    \vspace{0.15cm}
+    \vspace{0.05cm}
     \item Use Pinecone or Redis, ensemble + filtering, quantization, caching, background indexing.
   \end{enumerate}
 \end{frame}
@@ -1106,6 +1021,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
 % Frame 38: Further Reading
 \begin{frame}{Further Reading \texttt{\&} Resources}
   \begin{itemize}
+    \setlength{\itemsep}{1pt}
     \item \href{https://python.langchain.com/docs/modules/data_connection/}{LangChain Data Connection Guide}
     \item \href{https://python.langchain.com/docs/integrations/vectorstores/}{Vector Store Integrations}
     \item \href{https://python.langchain.com/docs/integrations/embedding_providers/}{Embedding Providers}
@@ -1116,7 +1032,7 @@ chain = create_retrieval_chain(custom_retriever, llm)
     \item Pinecone Docs: \url{https://docs.pinecone.io/}
   \end{itemize}
 
-  \vspace{0.3cm}
+  \vspace{0.05cm}
   \begin{tipbox}[Next Steps]
     Build a small RAG prototype with Chroma + OpenAI embeddings.\\
     Experiment with MMR, metadata filtering, and multi-query retrieval.\\

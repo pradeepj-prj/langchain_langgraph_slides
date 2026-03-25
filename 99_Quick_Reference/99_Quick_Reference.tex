@@ -19,10 +19,10 @@
 \definecolor{codebg}{HTML}{F5F5F5}
 \definecolor{docgray}{gray}{0.55}
 
-\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries}
-\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries}
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
 
 \lstset{
   basicstyle=\ttfamily\scriptsize,
@@ -38,6 +38,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -292,38 +294,25 @@ answer = chain.invoke("What does the site say about X?")
   \end{lstlisting}
 
   \docref{RAG}
+\vspace{-0.2cm}
 \end{frame}
 
 % SLIDE 9: Memory & History
 \begin{frame}[fragile]
   \frametitle{Memory Patterns}
+\vspace{-0.3cm}
 
-  \begin{lstlisting}
-# 1. RunnableWithMessageHistory (stateful chains)
-from langchain_core.runnables.history import (
-  RunnableWithMessageHistory
-)
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
+from langchain_core.runnables.history import RunnableWithMessageHistory
 chain = RunnableWithMessageHistory(
-    runnable=llm,
-    get_session_history=get_session_history,
-    input_messages_key="input",
-    history_messages_key="history"
-)
-# Invoke with session_id
-result = chain.invoke(
-    {"input": "Hi!"},
-    config={"configurable": {"session_id": "user123"}}
-)
+    runnable=llm, get_session_history=get_session_history)
+result = chain.invoke({"input": "Hi!"},
+    config={"configurable": {"session_id": "user123"}})
 
-# 2. trim_messages (summarize old context)
 from langchain_core.messages import trim_messages
-trimmer = trim_messages(
-    max_tokens=1000,
-    strategy="last"
-)
-
-# 3. Store in any backend (Redis, PostgreSQL, etc.)
+trimmer = trim_messages(max_tokens=1000, strategy="last")
   \end{lstlisting}
+\vspace{-0.35cm}
 
   \docref{Memory}
 \end{frame}
@@ -331,37 +320,23 @@ trimmer = trim_messages(
 % SLIDE 10: LangGraph Essentials
 \begin{frame}[fragile]
   \frametitle{LangGraph — State Machines}
+\vspace{-0.3cm}
 
-  \begin{lstlisting}
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 from langgraph.graph import StateGraph
-from typing import TypedDict
 
-class AgentState(TypedDict):
+class State(TypedDict):
     messages: list
-    counter: int
 
-# Build graph
-graph = StateGraph(AgentState)
-
-# Add nodes (functions)
-def node_1(state):
-    return {"messages": state["messages"] + ["step1"], "counter": 1}
-
-def node_2(state):
-    return {"messages": state["messages"] + ["step2"]}
-
-graph.add_node("node1", node_1)
-graph.add_node("node2", node_2)
-
-# Add edges
+graph = StateGraph(State)
+graph.add_node("node1", lambda x: {"messages": x["messages"] + ["step1"]})
+graph.add_node("node2", lambda x: {"messages": x["messages"] + ["step2"]})
 graph.add_edge("node1", "node2")
 graph.set_entry_point("node1")
 graph.set_finish_point("node2")
-
-# Compile & run
 app = graph.compile()
-result = app.invoke({"messages": [], "counter": 0})
   \end{lstlisting}
+\vspace{-0.35cm}
 
   \docref{LangGraph}
 \end{frame}
@@ -369,38 +344,26 @@ result = app.invoke({"messages": [], "counter": 0})
 % SLIDE 11: Streaming & Callbacks
 \begin{frame}[fragile]
   \frametitle{Streaming \& Callbacks}
+\vspace{-0.3cm}
 
-  \begin{lstlisting}
-# Stream tokens
+  \begin{lstlisting}[basicstyle=\ttfamily\tiny]
 for chunk in llm.stream("Hello"):
-    print(chunk.content, end="", flush=True)
+    print(chunk.content, end="")
 
-# Async streaming
 async for chunk in await llm.astream("Prompt"):
     print(chunk.content)
 
-# Stream with events
 from langchain_core.callbacks import LangChainTracer
-from langsmith import Client
-client = Client()
 tracer = LangChainTracer(project_name="my_project")
+result = chain.invoke({"input": "..."}, config={"callbacks": [tracer]})
 
-result = chain.invoke(
-    {"input": "..."},
-    config={"callbacks": [tracer]}
-)
-
-# View in LangSmith
-# https://smith.langchain.com -> projects -> my_project
-
-# Custom callback
-from langchain_core.callbacks import BaseCallbackHandler
 class MyCallback(BaseCallbackHandler):
     def on_llm_end(self, response, **kwargs):
-        print(f"LLM finished: {response}")
+        print(f"Done: {response}")
   \end{lstlisting}
+\vspace{-0.35cm}
 
-  \docref{Callbacks, LangSmith}
+  \docref{Callbacks}
 \end{frame}
 
 % SLIDE 12: Troubleshooting Checklist
@@ -470,12 +433,15 @@ class MyCallback(BaseCallbackHandler):
   \end{conceptbox}
 
   \begin{warningbox}[Common Pitfalls]
+    \small
     \begin{itemize}
+      \setlength{\itemsep}{1pt}
       \item Don't reinitialize embeddings for each query (slow, inconsistent)
       \item Don't use retriever without persistence check (data loss)
       \item Don't forget to add error handling in agent loops (infinite loops)
     \end{itemize}
   \end{warningbox}
+\vspace{-0.2cm}
 \end{frame}
 
 % SLIDE 15: Resources & Next Steps
@@ -517,9 +483,9 @@ class MyCallback(BaseCallbackHandler):
     \end{itemize}
   \end{columns}
 
-  \vspace{1cm}
+  \vspace{0.4cm}
   \begin{center}
-    {\large \textcolor{lcblue}{\textbf{This is a quick reference—bookmark it!}}}
+    {\small \textcolor{lcblue}{\textbf{Quick reference—bookmark it!}}}
   \end{center}
 \end{frame}
 

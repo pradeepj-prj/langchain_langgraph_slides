@@ -33,6 +33,8 @@
   tabsize=2,
   xleftmargin=2pt,
   xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
 }
 
 \newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
@@ -83,6 +85,7 @@ response = llm.invoke("Extract name and age from: John is 25")
 \small
 \textbf{Without structured output:}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item Manually parsing strings is fragile
   \item No type safety or validation
   \item Hard to integrate with downstream systems
@@ -90,6 +93,7 @@ response = llm.invoke("Extract name and age from: John is 25")
 
 \textbf{With structured output:}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item Guaranteed schema compliance
   \item Type-safe data for your application
   \item Easier integration and testing
@@ -129,7 +133,7 @@ result = chain.invoke({"text": "Hello, world!"})
 print(result)  # "Bonjour, le monde!"
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{When to use:} Raw string output for summarization, translation, open-ended generation.
 \end{frame}
@@ -150,7 +154,7 @@ result = chain.invoke({})
 # result = ["mango", "pineapple", "banana", ...]
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Use case:} Simple list generation with delimiter-separated values.
 \end{frame}
@@ -193,7 +197,7 @@ parser = PydanticOutputParser(pydantic_object=Product)
 chain = prompt | model | parser
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \docref{langchain.org/docs/modules/model\_io/output\_parsers/pydantic}
 \end{frame}
@@ -216,7 +220,7 @@ result = structured_model.invoke(
     "I love this product!")
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Advantages:} No explicit parser, leverages model's native capabilities, better reliability
 
@@ -231,7 +235,7 @@ Model uses function calling API to return structured data directly.
 
 Pros: Most reliable. Cons: Requires function calling support.
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{2. JSON Mode:}\\
 Model constrained to output valid JSON matching schema.
@@ -304,7 +308,7 @@ parser = model.with_structured_output(Task)
 # result.priority is guaranteed to be HIGH, MEDIUM, or LOW
 \end{lstlisting}
 
-\vspace{0.2cm}
+\vspace{0.08cm}
 
 \textbf{Benefit:} Enums ensure the LLM selects from allowed choices.
 \end{frame}
@@ -352,7 +356,7 @@ custom_parser = RunnableLambda(parse_custom)
 chain = prompt | model | custom_parser
 \end{lstlisting}
 
-\vspace{0.2cm}
+\vspace{0.08cm}
 
 \textbf{Use:} Combine custom logic with LangChain for specialized parsing.
 \end{frame}
@@ -393,10 +397,11 @@ except OutputParserException as e:
     # Handle: retry, use default, log, etc.
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Common Causes:}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item LLM returns malformed JSON
   \item Missing required fields
   \item Type mismatch (string vs int)
@@ -469,10 +474,11 @@ Custom Lambda & High & Depends & Depends \\
 \end{tabular}
 \end{center}
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Decision Guide:}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item \textbf{Just strings?} Use StrOutputParser
   \item \textbf{Typed objects?} Use with\_structured\_output
   \item \textbf{Custom logic?} Use RunnableLambda
@@ -488,7 +494,7 @@ When: Model supports it (GPT-4, Claude 3+)
 
 Trade-off: Slightly higher latency
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{JSON Mode}
 
@@ -498,7 +504,7 @@ When: Model supports JSON mode but not function calling
 
 Trade-off: Requires explicit prompting
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Prompt plus Parsing}
 
@@ -539,42 +545,47 @@ Constrained choices & with\_structured\_output() with Enum \\
 \begin{frame}{Performance Considerations}
 \textbf{Function Calling is Faster}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item No extra prompt engineering needed
   \item Single API call with structured result
   \item Model enforces schema natively
   \item 10-20 percent lower latency than JSON mode
 \end{itemize}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Prompting Can Be Slow}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item Extra tokens for format instructions
   \item May require multiple retries
   \item Additional parsing overhead
   \item Less reliable with smaller models
 \end{itemize}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Optimization:}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item Use with\_structured\_output when available
   \item Cache format instructions in prompt
-  \item Batch similar parsing requests
-  \item Consider model choice (GPT-4o better than GPT-3.5)
+  \item Batch parsing requests
+  \item Choose right model (GPT-4o > GPT-3.5)
 \end{itemize}
+\vspace{-0.12cm}
 \end{frame}
 
 \begin{frame}{Token Usage and Cost}
 \textbf{with\_structured\_output():}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item Function calling: 50-100 extra tokens for schema
   \item JSON mode: 100-200 extra tokens for constraints
   \item Much cheaper than retry failures
 \end{itemize}
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Cost Comparison (for 1000 requests):}
 
@@ -592,7 +603,7 @@ Prompting plus Parsing & 1.3x (plus retries) \\
 \end{tabular}
 \end{center}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Recommendation:} Use function calling when available. Cost difference is minimal but reliability gains are significant.
 \end{frame}
@@ -610,7 +621,7 @@ from langchain_core.runnables import RunnableLambda
 from pydantic import BaseModel, Field
 \end{lstlisting}
 
-\vspace{0.3cm}
+\vspace{0.1cm}
 
 \textbf{Define your schema:}
 \begin{lstlisting}[language=Python]
@@ -647,19 +658,19 @@ model.with_structured_output(MyOutput)
 
 LLMs may return malformed JSON even with instructions. Action: Always use error handling and retries.
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Enum Values Must Match Exactly}
 
 If your Enum says HIGH, model must output HIGH. Action: Be explicit in prompts.
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Optional Fields Can Be Tricky}
 
 Models might skip optional fields or include them as null. Action: Set explicit defaults in Pydantic.
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Large Nested Schemas Are Expensive}
 
@@ -690,6 +701,7 @@ Deep nesting increases token count significantly. Action: Flatten where possible
 
 \begin{frame}{Resources and Further Reading}
 \begin{itemize}
+  \setlength{\itemsep}{1pt}
   \item \textbf{LangChain Docs: Output Parsers}
     langchain.org/docs/modules/model\_io/output\_parsers
 
@@ -706,7 +718,7 @@ Deep nesting increases token count significantly. Action: Flatten where possible
     github.com/langchain-ai/langchain
 \end{itemize}
 
-\vspace{0.5cm}
+\vspace{0.08cm}
 
 \textbf{Next in this series:} Section 03 - Prompt Engineering and Templates
 \end{frame}
