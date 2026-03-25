@@ -1,0 +1,385 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Error Handling \& Resilience}
+\subtitle{Section 12: Building Robust Agents}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Mental Model: Building Resilient Agents}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Agents run autonomously, often 24/7, in unpredictable environments
+\item External APIs fail, networks timeout, data is malformed
+\item Without resilience, a single failure crashes the entire workflow
+\item Resilient agents gracefully handle failures and recover automatically
+\item Think \emph{crash recovery}, \emph{retry logic}, \emph{fallback paths}
+\end{itemize}
+\vspace{0.15cm}
+\begin{conceptbox}[Key Insight]
+Resilience is not about preventing failures-it's about detecting them early and recovering fast.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}{Why Resilience Matters}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Long-running processes:} Agents may execute for hours or days
+\item \textbf{Unreliable I/O:} Network calls, file operations, database queries can fail
+\item \textbf{Cascading failures:} One bad node can corrupt downstream state
+\item \textbf{Cost:} Retrying expensive operations without limits wastes tokens
+\item \textbf{User experience:} Silent failures or infinite hangs degrade trust
+\end{itemize}
+\vspace{0.1cm}
+\begin{warningbox}[Production Reality]
+Without error handling, agents will fail in production. Resilience strategies are mandatory, not optional.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}{Node-Level Error Handling: Try/Except}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Wrap node logic in try/except blocks
+\item Catch specific exceptions (APIError, TimeoutError)
+\item Return error state instead of raising
+\item Log error details for monitoring
+\end{itemize}
+\vspace{0.15cm}
+{\small \texttt{def search\_node(state):}}
+{\small \texttt{try: results = search\_api(...); return \{"results": results\}}}
+{\small \texttt{except APIError as e: return \{"error": str(e)\}}}
+\end{frame}
+
+\begin{frame}{Retry Policy: Automatic Retries}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item LangGraph supports \texttt{retry\_policy} on node definitions
+\item Automatically retries a node on transient failures
+\item Exponential backoff prevents overwhelming failing services
+\item Configure: \texttt{max\_attempts}, \texttt{backoff\_factor}, \texttt{retry\_on}
+\end{itemize}
+\vspace{0.15cm}
+\begin{conceptbox}[When to Use Retries]
+Ideal for transient failures (network timeouts, rate limits, temporary service outages). Not suitable for logic errors or invalid input.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}{Configuring RetryPolicy}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Import: \texttt{from langgraph.pregel import RetryPolicy}
+\item Create: \texttt{RetryPolicy(max\_attempts=3, backoff\_factor=2.0)}
+\item Specify: \texttt{retry\_on=[APIError, TimeoutError]}
+\item Attach: \texttt{graph.add\_node(..., retry\_policy=rp)}
+\end{itemize}
+\vspace{0.1cm}
+\begin{tipbox}[Backoff Timing]
+Exponential backoff: 1s, 2s, 4s, 8s... Prevents overwhelming failing services.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{Error Routing: Directing Failures}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Use conditional edges to route on error state
+\item Direct failed nodes to recovery or error-handling nodes
+\item Example: if search fails, try fallback data source
+\end{itemize}
+\vspace{0.15cm}
+\begin{codebox}[Routing logic]
+\begin{lstlisting}
+def route_on_error(state):
+  if state.get("error"):
+    return "fallback_search"
+  return "process_results"
+\end{lstlisting}
+\end{codebox}
+\vspace{0.1cm}
+\begin{tipbox}[Tip]
+Combine try/except in nodes with error routing in edges for comprehensive error handling.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Fallback Patterns: Graceful Degradation}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Primary approach fails -> use secondary (slower, cheaper, less accurate)
+\item Examples: web search -> cached data; API call -> local model
+\item Ensure fallback is always available and tested
+\item Never degrade silently-log fallback use for monitoring
+\end{itemize}
+\vspace{0.15cm}
+\begin{warningbox}[Fallback Risk]
+If both primary and fallback fail, the error still propagates. Have a final error handler.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}{Durable Execution: Checkpoint Recovery}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Checkpointing saves state after each node execution
+\item If agent crashes, resume from last checkpoint (not from start)
+\item Dramatically reduces waste and improves reliability
+\item LangGraph's default Executor uses checkpointing
+\end{itemize}
+\vspace{0.15cm}
+\begin{conceptbox}[Durability Magic]
+A 10-step process that crashes at step 8 resumes at step 8, not step 1. Recovery is instant.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}{Checkpoint Configuration}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Import: \texttt{from langgraph.checkpoint.sqlite import SqliteSaver}
+\item Create: \texttt{saver = SqliteSaver(db\_path="agent.db")}
+\item Compile: \texttt{graph = builder.compile(checkpointer=saver)}
+\item Invoke: \texttt{graph.invoke(data, config=\{"configurable": \{"thread\_id": ".."\}\})}
+\end{itemize}
+\vspace{0.1cm}
+\begin{tipbox}[Checkpointer Options]
+SqliteSaver for single-machine. PostgresSaver for distributed/production deployments.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Error Handling Flow Diagram}
+\begin{center}
+\begin{tikzpicture}[scale=0.9, every node/.style={font=\scriptsize}]
+\node[draw,rounded rectangle,fill=blue!30] (start) at (0,0) {Node Execute};
+\node[draw,diamond,aspect=3] (err) at (2,0) {Error?};
+\node[draw,rectangle,fill=green!20] (success) at (4,1.5) {Next Node};
+\node[draw,rectangle,fill=orange!20] (retry) at (2,-2) {Retry};
+\node[draw,diamond,aspect=2.5] (retryok) at (4,-2) {Retries\\ OK?};
+\node[draw,rectangle,fill=yellow!20] (fallback) at (6,-2) {Fallback};
+\node[draw,rectangle,fill=red!20] (deadletter) at (8,0) {Dead Letter};
+\draw[-{Latex}] (start) -- (err);
+\draw[-{Latex}] (err) -- node[above] {no} (success);
+\draw[-{Latex}] (err) -- node[left] {yes} (retry);
+\draw[-{Latex}] (retry) -- (retryok);
+\draw[-{Latex}] (retryok) -- node[above] {yes} (fallback);
+\draw[-{Latex}] (fallback) -- node[below] {fails} (deadletter);
+\draw[-{Latex}] (fallback) -- node[above] {ok} (success);
+\end{tikzpicture}
+\end{center}
+\docref{Error Handling Flow}
+\end{frame}
+
+\begin{frame}{Timeout Handling for Long-Running Nodes}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Set node-level timeouts to prevent infinite waits
+\item LangGraph: \texttt{timeout=seconds} on node execution
+\item Catch \texttt{TimeoutError} and route to fallback or error handler
+\end{itemize}
+\vspace{0.15cm}
+\begin{tipbox}[Timeout Strategy]
+Always set reasonable timeouts on external API calls. Default to fast failure over slow hang.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Timeout Configuration Example}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Set: \texttt{graph.add\_node("api\_call", node\_fn, timeout=10)}
+\item Combine with retry: \texttt{retry\_policy=RetryPolicy(...)}
+\item Timeout fires -> treated as retriable error
+\item Max retries enforced; fail gracefully if all attempts exhaust
+\end{itemize}
+\vspace{0.1cm}
+\begin{tipbox}[Timeout Strategy]
+Set conservative timeouts. Better fast failure than slow hang.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Dead Letter Queues: Capturing Unrecoverable Errors}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item When all retries and fallbacks fail, send to "dead letter" queue
+\item Preserve error state for manual review and debugging
+\item Example: write to database, file, or monitoring system
+\item Never silently drop errors
+\end{itemize}
+\vspace{0.15cm}
+\begin{warningbox}[Critical]
+Dead letter handling is your last defense. Ensure it's robust and monitored.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}{Dead Letter Pattern}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Capture failed state: \texttt{\{"timestamp", "agent\_id", "error", "state\_snapshot"\}}
+\item Persist to database, file, or monitoring system
+\item Never silently discard errors
+\item Enable debugging and root cause analysis
+\end{itemize}
+\vspace{0.1cm}
+\begin{warningbox}[Critical]
+Dead letter is your last safety net. Ensure it's robust and monitored.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}{Monitoring \& Alerting with LangSmith}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item LangSmith integrates with LangGraph for error tracking
+\item Automatic tracing of node execution, inputs, outputs, errors
+\item Set alerts on error rate thresholds
+\item Dashboards for latency, token usage, retry frequency
+\end{itemize}
+\vspace{0.15cm}
+\begin{tipbox}[Observability]
+Instrument error handling with LangSmith. Without visibility, you're flying blind.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{LangSmith Tracing}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Set env: \texttt{LANGSMITH\_API\_KEY}, \texttt{LANGSMITH\_PROJECT}
+\item All nodes automatically traced (no code changes)
+\item Logs: errors, latency, token usage, retry counts
+\item Dashboards show error rates, fallback activations
+\end{itemize}
+\vspace{0.1cm}
+\begin{tipbox}[Zero Friction]
+Just set env vars; automatic observability kicks in.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Testing Error Scenarios}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Write unit tests that inject failures (mock API errors)
+\item Test retry logic: verify correct number of retries
+\item Test fallback activation: ensure fallback is invoked on primary failure
+\item Test error routing: confirm errors reach error handlers
+\item Test timeout behavior: verify timeout fires and is caught
+\end{itemize}
+\vspace{0.15cm}
+\begin{tipbox}[Best Practice]
+Every error path must be tested. Untested error handling is untested code.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Testing Retry Behavior}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Mock API to fail twice, succeed on third attempt
+\item Verify result contains expected data
+\item Assert call count = 3 (correct number of retries)
+\item Test fallback is invoked if all retries exhaust
+\end{itemize}
+\vspace{0.1cm}
+\begin{tipbox}[Test Pattern]
+Mock external dependencies. Verify retry count, fallback activation.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}{Common Pitfalls}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Swallowing errors:} Catching all exceptions, returning safe default, losing context
+\item \textbf{Infinite retries:} No max\_attempts; agent retries forever on permanent failures
+\item \textbf{Fallback loops:} Fallback fails too, but no error routing; state corrupted
+\item \textbf{No monitoring:} Errors happen silently; no visibility into failure rates
+\item \textbf{Timeout too long:} Waits 5+ minutes on failed call before failing
+\end{itemize}
+\vspace{0.1cm}
+\docref{Error Handling Best Practices}
+\end{frame}
+
+\begin{frame}{Summary: Error Handling Strategy}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Layer 1 (Node-level):} Try/except inside node functions
+\item \textbf{Layer 2 (Automatic):} Retry policies with exponential backoff
+\item \textbf{Layer 3 (Routing):} Conditional edges to fallback nodes
+\item \textbf{Layer 4 (Durability):} Checkpoint recovery from crashes
+\item \textbf{Layer 5 (Capture):} Dead letter handlers for unrecoverable errors
+\item \textbf{Layer 6 (Visibility):} LangSmith monitoring and alerting
+\end{itemize}
+\vspace{0.15cm}
+\begin{conceptbox}[Remember]
+Resilient agents are not built; they are composed from layers of error handling.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}{Cheat Sheet: Error Handling}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Scenario} & \textbf{Solution} \\
+\midrule
+Transient API failure & RetryPolicy + backoff \\
+Invalid input & try/except, return error state \\
+Slow external call & Set timeout, route on timeout \\
+Primary source unavailable & Fallback node + conditional edge \\
+Unrecoverable error & Dead letter queue + log \\
+Need visibility & LangSmith tracing + alerts \\
+Crash recovery & Checkpoint + thread\_id \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Self-Check Questions}
+\setlength{\itemsep}{2pt}
+\begin{enumerate}
+\item What's the difference between error routing and retry policies?
+\item When would you use a fallback vs. returning an error state?
+\item How does checkpointing help with resilience?
+\item Why should dead letter errors be logged persistently?
+\item How would you test a retry policy with exponential backoff?
+\item What's the risk of setting timeouts too long?
+\item How does LangSmith visibility improve error handling?
+\end{enumerate}
+\end{frame}
+
+\end{document}

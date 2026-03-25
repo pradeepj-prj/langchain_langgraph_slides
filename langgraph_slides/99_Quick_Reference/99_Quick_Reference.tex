@@ -1,0 +1,256 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Quick Reference}
+\subtitle{Section 99: LangGraph Cheat Sheet}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Essential Imports}
+\small
+\texttt{from langgraph.graph import StateGraph, START, END}\\
+\texttt{from langgraph.checkpoint.sqlite import SqliteSaver}\\
+\texttt{from langgraph.checkpoint.postgres import PostgresSaver}\\
+\texttt{from langchain\_core.messages import BaseMessage, HumanMessage}\\
+\texttt{from typing import TypedDict, Annotated}\\
+\texttt{from operator import add}
+\end{frame}
+
+\begin{frame}{StateGraph Construction Pattern}
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\item Define state: \texttt{class MyState(TypedDict)}
+\item Create builder: \texttt{builder = StateGraph(MyState)}
+\item Add nodes: \texttt{builder.add\_node("name", func)}
+\item Set entry: \texttt{builder.set\_entry\_point("name")}
+\item Add edges: \texttt{builder.add\_edge("from", "to")}
+\item Compile: \texttt{graph = builder.compile(checkpointer=...)}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{State Definition Patterns}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Basic:} \texttt{field: str} (simple fields)
+\item \textbf{List (auto-merge):} \texttt{Annotated[list, add]}
+\item \textbf{Messages (dedupe):} \texttt{Annotated[list[BaseMessage], add\_messages]}
+\item \textbf{Custom reducer:} \texttt{Annotated[T, custom\_merge\_fn]}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Common Reducer Patterns}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Reducer} & \textbf{Behavior} \\
+\midrule
+\texttt{add} & \texttt{[1,2] + [3,4] = [1,2,3,4]} \\
+\texttt{add\_messages} & Merges messages, deduplicates by ID \\
+\texttt{lambda e, n: e + [n]} & Append single item \\
+\texttt{lambda e, n: n} & Replace (overwrite) \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Edge Patterns}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Simple:} \texttt{add\_edge("from", "to")}
+\item \textbf{Conditional:} \texttt{add\_conditional\_edges("from", router\_fn)}
+\item \textbf{Tools:} \texttt{add\_conditional\_edges("agent", tools\_condition)}
+\item Router returns string node name or list of names (multi-target)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Checkpointer Setup}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{None (dev):} No persistence
+\item \textbf{SqliteSaver:} Single-machine, \texttt{db\_path="agent.db"}
+\item \textbf{PostgresSaver:} Production, \texttt{conn\_string="postgresql://..."}
+\item Invoke with: \texttt{config=\{"configurable": \{"thread\_id": "..."\}\}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Streaming Patterns}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{All values:} \texttt{graph.stream(input)} - all state changes
+\item \textbf{Updates only:} \texttt{stream\_mode="updates"} - deltas only
+\item \textbf{Messages:} \texttt{stream\_mode="messages"} - message stream
+\item Iterate: \texttt{for event in graph.stream(...)}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Human-in-the-Loop Pattern}
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\item Set break: \texttt{builder.set\_break\_point("node\_name")}
+\item Invoke: \texttt{graph.invoke(input, config)} -> pauses at break
+\item User reviews/approves in UI
+\item Resume: \texttt{graph.invoke(None, config)} -> continues
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Multi-Agent Supervisor Pattern}
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\item Create supervisor node with routing logic
+\item Entry: \texttt{set\_entry\_point("supervisor")}
+\item Conditional edges: \texttt{add\_conditional\_edges("supervisor", router\_fn)}
+\item Router returns agent name or END
+\item Each agent updates state, passes to next
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Key Class Signatures}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Node:} \texttt{def node(state: State) -> dict}
+\item \textbf{Router:} \texttt{def router(state: State) -> str}
+\item \textbf{Tool:} \texttt{def tool(arg: str) -> str} with docstring
+\item \textbf{Model + tools:} \texttt{model.bind\_tools([tool1, tool2])}
+\item All return dicts (node) or strings (router)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Troubleshooting Checklist}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{State not merging?} Check Annotated reducer is correct
+\item \textbf{Node not executing?} Verify edge routing, check state key names
+\item \textbf{Tool not called?} Ensure model.bind\_tools() called, tool schema correct
+\item \textbf{No persistence?} Add checkpointer to compile(), set thread\_id in config
+\item \textbf{Streaming stuck?} Check for infinite loops, verify break points
+\item \textbf{Memory leak?} Trim messages list, delete old threads periodically
+\item \textbf{Slow execution?} Check for blocking I/O, parallelize independent nodes
+\end{itemize}
+\vspace{0.1cm}
+\docref{Debugging Guide}
+\end{frame}
+
+\begin{frame}{Decision Guide: Which Pattern?}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Need} & \textbf{Pattern} & \textbf{Example} \\
+\midrule
+Simple sequence & Linear edges & search -> write → review \\
+Conditional branching & Conditional edge & route on task type \\
+Agent loop & tools\_condition & agent + tool node \\
+Multi-agent & Supervisor routing & delegate to specialists \\
+Stateful conversation & Add messages reducer & multi-turn chat \\
+Crash recovery & PostgresSaver & production deployment \\
+Real-time feedback & stream(...) & progress UI \\
+Human approval & set\_break\_point & approval gate \\
+\bottomrule
+\end{tabular}
+\vspace{0.1cm}
+\docref{Pattern Selection}
+\end{frame}
+
+\begin{frame}{Quick Start Template}
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\item \texttt{from langgraph.graph import StateGraph, END}
+\item \texttt{class State(TypedDict): ...}
+\item \texttt{def node\_fn(state): return \{...\}}
+\item \texttt{builder = StateGraph(State)}
+\item \texttt{builder.add\_node(...)}
+\item \texttt{builder.set\_entry\_point(...)}
+\item \texttt{builder.add\_edge(...)}
+\item \texttt{graph = builder.compile()}
+\item \texttt{result = graph.invoke(\{...\})}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Async Patterns}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Async node:} \texttt{async def node(state): ...}
+\item \textbf{Async invoke:} \texttt{await graph.ainvoke(input, config)}
+\item \textbf{Async stream:} \texttt{async for event in graph.astream(...)}
+\item Use for concurrent I/O, parallel tool calls
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Production Deployment Checklist}
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Define state schema with Annotated reducers
+\item Write unit tests for each node
+\item Add retry policies to error-prone nodes
+\item Set up PostgreSQL checkpointing for persistence
+\item Enable LangSmith tracing for observability
+\item Implement input validation and error handlers
+\item Add break points for human-in-the-loop if needed
+\item Create langgraph.json for deployment
+\item Load test before production
+\item Monitor error rates and latency post-launch
+\end{itemize}
+\vspace{0.1cm}
+\docref{Pre-Launch Checklist}
+\end{frame}
+
+\begin{frame}{Self-Check: Can You?}
+\setlength{\itemsep}{2pt}
+\begin{enumerate}
+\item Define a TypedDict state with Annotated reducers?
+\item Add nodes and edges to a StateGraph?
+\item Use conditional edges to route based on state?
+\item Set up SQLite or PostgreSQL checkpointing?
+\item Stream results in real-time?
+\item Implement human-in-the-loop with break points?
+\item Bind tools to a model for agent loops?
+\item Deploy to LangGraph Cloud?
+\end{enumerate}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,368 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 06: Persistence \& Checkpointing}
+\subtitle{Saving State Snapshots for Long-Running Agents}
+\author{LangGraph v1.0.x (March 2026)}
+\date{}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Mental Model: Why Persistence Matters}
+  \begin{conceptbox}[The Problem]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item Agents run across \textbf{multiple API calls} (e.g., user messages)
+      \item Without persistence, state is \textbf{lost} between invocations
+      \item Conversations die, multi-step tasks fail if process crashes
+    \end{itemize}
+  \end{conceptbox}
+  \vspace{0.1cm}
+  \begin{conceptbox}[The Solution]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item \textbf{Checkpointing}: save state snapshot after each step
+      \item \textbf{Thread IDs}: group related invocations (per user, per conversation)
+      \item Combine them: resume exactly where you left off
+    \end{itemize}
+  \end{conceptbox}
+\end{frame}
+
+\begin{frame}{What Is a Checkpointer?}
+  \begin{conceptbox}[Checkpointer Definition]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item Object that \textbf{saves state} after each super-step
+      \item Implements \texttt{get}, \texttt{put}, \texttt{list} methods
+      \item Can be in-memory, SQLite, PostgreSQL, or custom
+      \item Enables \textbf{time travel}: read state at any checkpoint
+    \end{itemize}
+  \end{conceptbox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Checkpoint Timing]
+    Checkpoints happen between graph steps, not inside nodes (that's too frequent).
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{MemorySaver: In-Memory Checkpointer}
+  \begin{codebox}[Development Setup]
+    \begin{lstlisting}
+from langgraph.checkpoint.memory import MemorySaver
+checkpointer = MemorySaver()
+graph = builder.compile(checkpointer=checkpointer)
+config = {"configurable": {"thread_id": "user_123"}}
+result = graph.invoke(
+  {"messages": [HumanMessage("Hi")]},
+  config=config
+)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{warningbox}[Development Only]
+    MemorySaver loses data on process restart. Use only for prototyping.
+  \end{warningbox}
+\end{frame}
+
+\begin{frame}[fragile]{Setting Up Checkpointing}
+  \begin{codebox}[Checkpointer Setup Pattern]
+    \begin{lstlisting}
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import StateGraph
+checkpointer = MemorySaver()
+builder = StateGraph(MessagesState)
+builder.add_node("agent", agent_node)
+builder.add_edge(START, "agent")
+graph = builder.compile(checkpointer=checkpointer)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Key Parameter]
+    \texttt{checkpointer=} in \texttt{compile()} activates persistence.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{Thread IDs: Organizing Conversations}
+  \begin{codebox}[Thread ID Pattern]
+    \begin{lstlisting}
+user_id = "user_123"
+thread_id = f"conv_{user_id}_{timestamp}"
+config = {
+  "configurable": {
+    "thread_id": thread_id
+  }
+}
+result = graph.invoke(
+  {"messages": [HumanMessage("Hello")]},
+  config=config
+)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Thread Strategy]
+    One thread per conversation. Group related messages under same thread\_id.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{Resuming Conversations}
+  \begin{codebox}[Resume from Last Checkpoint]
+    \begin{lstlisting}
+config = {"configurable": {"thread_id": "conv_123"}}
+result_1 = graph.invoke(
+  {"messages": [HumanMessage("What's 2+2?")]},
+  config=config
+)
+result_2 = graph.invoke(
+  {"messages": [HumanMessage("And 3+3?")]},
+  config=config
+)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Automatic Resumption]
+    LangGraph automatically loads last state from thread. New input appends to messages.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{Getting State: Inspect Current Checkpoint}
+  \begin{codebox}[Retrieve Current State]
+    \begin{lstlisting}
+config = {"configurable": {"thread_id": "conv_123"}}
+state = graph.get_state(config)
+print(state.values)
+print(state.next)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Use Cases]
+    Debugging, monitoring agent progress, checking decision points.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{Updating State: Modify Externally}
+  \begin{codebox}[Manual State Update]
+    \begin{lstlisting}
+config = {"configurable": {"thread_id": "conv_123"}}
+new_state = {
+  "messages": state.values["messages"] + [
+    HumanMessage("Additional context")
+  ]
+}
+graph.update_state(config, new_state)
+result = graph.invoke(None, config)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Manual Edits]
+    Useful for injecting human feedback or correcting mistakes.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{State History: Time Travel}
+  \begin{codebox}[View All Checkpoints]
+    \begin{lstlisting}
+config = {"configurable": {"thread_id": "conv_123"}}
+history = graph.get_state_history(config)
+for i, state_snapshot in enumerate(history):
+  print(f"Checkpoint {i}: {state_snapshot.values}")
+  print(f"Next node: {state_snapshot.next}")
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Debugging and Auditing]
+    See entire execution trace. Useful for understanding why agent made a decision.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{SqliteSaver: Persistent Local Storage}
+  \begin{codebox}[SQLite Checkpointer]
+    \begin{lstlisting}
+from langgraph.checkpoint.sqlite import SqliteSaver
+checkpointer = SqliteSaver(
+  conn=sqlite3.connect(".langgraph.db")
+)
+graph = builder.compile(checkpointer=checkpointer)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Local Persistence]
+    Data survives process restarts. Perfect for single-machine deployments.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile]{PostgresSaver: Production-Grade Persistence}
+  \begin{codebox}[PostgreSQL Checkpointer]
+    \begin{lstlisting}
+from langgraph.checkpoint.postgres import PostgresSaver
+conn_string = "postgresql://user:pass@localhost/langgraph"
+async with await asyncpg.create_pool(
+  conn_string
+) as pool:
+  checkpointer = PostgresSaver(
+    sync_connection=pool
+  )
+  graph = builder.compile(checkpointer=checkpointer)
+    \end{lstlisting}
+  \end{codebox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Enterprise Ready]
+    Distributed, scalable, supports concurrent access. Use for production.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}{TikZ Diagram: Checkpoint Flow}
+  \begin{center}
+    \begin{tikzpicture}[scale=0.85, every node/.style={font=\scriptsize}]
+      \node[draw, rectangle, fill=lcblue!20, minimum width=1.2cm, minimum height=0.5cm] (inv) at (0, 2) {Invoke};
+      \node[draw, rectangle, fill=lcgreen!20, minimum width=1.2cm, minimum height=0.5cm] (n1) at (1.8, 2) {Node 1};
+      \node[draw, rectangle, fill=lcorange!20, minimum width=1.4cm, minimum height=0.5cm] (ckpt1) at (3.6, 2) {Checkpoint};
+      \node[draw, rectangle, fill=lcgreen!20, minimum width=1.2cm, minimum height=0.5cm] (n2) at (5.4, 2) {Node 2};
+      \node[draw, rectangle, fill=lcorange!20, minimum width=1.4cm, minimum height=0.5cm] (ckpt2) at (7.2, 2) {Checkpoint};
+      \draw[-Latex] (inv) -- (n1);
+      \draw[-Latex] (n1) -- (ckpt1);
+      \draw[-Latex] (ckpt1) -- (n2);
+      \draw[-Latex] (n2) -- (ckpt2);
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.1cm}
+  \begin{tipbox}[Pattern]
+    Checkpoint after each node executes. Enables resumption from any point.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}{Super-Steps Explained}
+  \begin{conceptbox}[Super-Step Definition]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item One \textbf{atomic unit} of graph execution
+      \item Executes \textbf{all edges from START} to first blocking node
+      \item Gets checkpointed after completion
+      \item LangGraph waits for human/external input between super-steps
+    \end{itemize}
+  \end{conceptbox}
+  \vspace{0.1cm}
+  \begin{tipbox}[Concurrency]
+    Super-steps are the natural unit for parallelization and interrupts.
+  \end{tipbox}
+\end{frame}
+
+\begin{frame}{Thread Management Patterns}
+  \begin{conceptbox}[Per-User Pattern]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item One thread per user: \texttt{thread\_id = f"user\_{user\_id}"}
+      \item All conversations with that user share one thread
+      \item Simpler, but context can get long
+    \end{itemize}
+  \end{conceptbox}
+  \vspace{0.1cm}
+  \begin{conceptbox}[Per-Conversation Pattern]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item One thread per conversation: \texttt{thread\_id = f"conv\_{conv\_id}"}
+      \item Separate contexts, easier to manage
+      \item Recommended for most multi-turn systems
+    \end{itemize}
+  \end{conceptbox}
+\end{frame}
+
+\begin{frame}{Common Pitfalls}
+  \begin{warningbox}[Forgetting thread\_id]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item All invocations go to same (anonymous) thread
+      \item Conversations pollute each other's state
+      \item Solution: always pass \texttt{config=\{"configurable": \{"thread\_id": ...\}\}}
+    \end{itemize}
+  \end{warningbox}
+  \vspace{0.1cm}
+  \begin{warningbox}[Stale State]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item Reading state before all nodes finish
+      \item Solution: let graph complete, then read from checkpoint
+    \end{itemize}
+  \end{warningbox}
+  \vspace{0.1cm}
+  \begin{warningbox}[Large State Objects]
+    \setlength{\itemsep}{1pt}
+    \begin{itemize}
+      \item Storing huge arrays/files in checkpoints
+      \item Solution: reference external storage, keep state lean
+    \end{itemize}
+  \end{warningbox}
+\end{frame}
+
+\begin{frame}[fragile]{Summary: Persistence Cheat Sheet}
+  \begin{codebox}[Quick Reference]
+    \begin{lstlisting}
+from langgraph.checkpoint.memory import MemorySaver
+checkpointer = MemorySaver()
+graph = builder.compile(checkpointer=checkpointer)
+config = {"configurable": {"thread_id": "conv_123"}}
+result = graph.invoke(input_state, config=config)
+state = graph.get_state(config)
+history = graph.get_state_history(config)
+graph.update_state(config, new_values)
+    \end{lstlisting}
+  \end{codebox}
+\end{frame}
+
+\begin{frame}{Self-Check: Do You Understand?}
+  \begin{enumerate}
+    \setlength{\itemsep}{1pt}
+    \item Why is persistence critical for multi-turn conversations?
+    \item What's the difference between MemorySaver and SqliteSaver?
+    \item How do thread IDs organize checkpoints?
+    \item What happens when you invoke the same thread\_id twice?
+    \item How do you inspect the state history?
+    \item What's a super-step and when do checkpoints happen?
+    \item When should you use per-user vs per-conversation threads?
+  \end{enumerate}
+\end{frame}
+
+\end{document}

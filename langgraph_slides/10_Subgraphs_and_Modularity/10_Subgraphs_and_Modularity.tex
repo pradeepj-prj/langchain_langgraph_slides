@@ -1,0 +1,331 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{basicstyle=\ttfamily\tiny,language=Python}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 10: Subgraphs \& Modularity}
+\subtitle{Composing Complex Systems from Smaller Graphs}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Mental Model: Subgraphs}
+\begin{conceptbox}[Core Idea]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Build complex systems from smaller graphs
+\item Reuse graph definitions like functions
+\item Manage complexity through composition
+\item Team-friendly: teams own subgraphs
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Analogy]
+Like function decomposition: main orchestrates sub-tasks.
+\end{tipbox}
+\docref{Subgraphs Guide}
+\end{frame}
+
+\begin{frame}
+\frametitle{Why Subgraphs Matter}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{warningbox}[Monolithic Graph]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item 50+ nodes in one file
+\item Hard to understand
+\item Difficult to test
+\item Team scaling hard
+\end{itemize}
+\end{warningbox}
+\column{0.48\textwidth}
+\begin{tipbox}[With Subgraphs]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item 3-4 nodes per graph
+\item Clear responsibility
+\item Easy unit tests
+\item Team ownership
+\end{itemize}
+\end{tipbox}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Defining a Subgraph}
+\begin{tipbox}[Create \& Compile]
+\texttt{builder = StateGraph(SearchState)}\\
+\texttt{builder.add\_node("search", search\_node)}\\
+\texttt{builder.add\_edge("search", "filter")}\\
+\texttt{search\_graph = builder.compile()}
+\end{tipbox}
+\docref{StateGraph}
+\end{frame}
+
+\begin{frame}
+\frametitle{Adding Subgraph as Node}
+\begin{tipbox}[Parent Graph]
+\texttt{parent.add\_node("search\_task", search\_graph)}\\
+\texttt{parent.add\_node("research", research\_graph)}\\
+\texttt{parent.add\_edge("search\_task", "research")}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Key Point]
+Compiled graph can be a node in parent.
+\end{tipbox}
+\docref{add\_node()}
+\end{frame}
+
+\begin{frame}
+\frametitle{State Mapping: Parent $\leftrightarrow$ Child}
+\begin{warningbox}[Challenge]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Parent: \texttt{\{query, user\_id, results\}}
+\item Child: \texttt{\{query, results\}}
+\item Need to map between schemas
+\end{itemize}
+\end{warningbox}
+\vspace{0.1cm}
+\begin{tipbox}[Solution: Shared Keys]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Common keys auto-sync
+\item Child uses only known fields
+\item Parent sees child output changes
+\end{itemize}
+\end{tipbox}
+\docref{State Mapping}
+\end{frame}
+
+\begin{frame}
+\frametitle{Shared State Keys}
+\begin{tipbox}[Parent \& Child Share]
+\texttt{class ParentState(TypedDict):}\\
+\texttt{query: str; results: list; user\_id: str}\\
+\texttt{class ChildState(TypedDict):}\\
+\texttt{query: str; results: list}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Behavior]
+Child reads query, modifies results. Parent sees both.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{State Transformation}
+\begin{tipbox}[Custom Mapper]
+\texttt{from langgraph.graph import compose}\\
+\texttt{mapping = \{"parent\_query": "child\_query"\}}\\
+\texttt{child\_node = compose(child\_graph,}\\
+\texttt{input\_map=mapping, output\_map=mapping)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[When Needed]
+Parent/child have very different schemas.
+\end{tipbox}
+\docref{compose()}
+\end{frame}
+
+\begin{frame}
+\frametitle{Complete Example: Research Agent}
+\begin{tipbox}[Web Search Subgraph]
+\texttt{class SearchState(TypedDict):}\\
+\texttt{query: str; sources: list}\\
+\texttt{search\_builder.add\_node("search", web\_search)}\\
+\texttt{search\_graph = search\_builder.compile()}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Parent Graph]
+\texttt{parent.add\_node("research", search\_graph)}\\
+\texttt{parent.add\_node("write", write\_report)}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Parent Graph Diagram}
+\begin{tipbox}[Hierarchy]
+Entry -> Subgraph (compiled) → Exit
+\end{tipbox}
+\vspace{0.1cm}
+\begin{conceptbox}[Key Concept]
+Parent passes input to subgraph, receives output back.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Nested Subgraphs}
+\begin{conceptbox}[Multi-Level Composition]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Level 1: Orchestrator graph
+\item Level 2: Multi-task subgraphs
+\item Level 3: Leaf subgraphs
+\item No hard depth limit
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Design Principle]
+Keep depth 2-3 levels for maintainability.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Checkpointing Across Subgraphs}
+\begin{tipbox}[Unified Checkpointer]
+\texttt{saver = SqliteSaver(":memory:")}\\
+\texttt{compiled = parent.compile(checkpointer=saver)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Key Insight]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Same checkpointer for all levels
+\item All state changes tracked in DB
+\item Resume from any checkpoint
+\end{itemize}
+\end{tipbox}
+\docref{Checkpointer}
+\end{frame}
+
+\begin{frame}
+\frametitle{Streaming from Subgraphs}
+\begin{tipbox}[Parent Streams Child Events]
+\texttt{for event in parent.stream(input\_data):}\\
+\texttt{print(f"Parent event: \{event\}")}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Behavior]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Events from subgraph bubble up
+\item Parent sees all node outputs
+\item Can filter by node name
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Human-in-the-Loop in Subgraphs}
+\begin{tipbox}[Interrupt Node]
+\texttt{user\_approval = get\_input(...)}\\
+\texttt{if not user\_approval:}\\
+\texttt{raise GraphInterrupt(...)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Integration]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Interrupt works in subgraph nodes
+\item Parent resumes from checkpoint
+\item Same thread\_id across levels
+\end{itemize}
+\end{tipbox}
+\docref{GraphInterrupt}
+\end{frame}
+
+\begin{frame}
+\frametitle{Modular Agent Architecture Pattern}
+\begin{conceptbox}[Typical Structure]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Orchestrator: routes to subagents
+\item Search Agent: web search subgraph
+\item Writer Agent: content synthesis
+\item Reviewer Agent: fact-checking
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Benefits]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Each team owns subgraph
+\item Parallel development
+\item Easy test and deploy
+\end{itemize}
+\end{tipbox}
+\docref{Agent Patterns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Common Subgraph Pitfalls}
+\begin{warningbox}[State Key Conflicts]
+Parent/child expect different types for same key.\\
+\textbf{Fix:} Define clear contracts with TypedDict.
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[Checkpoint Isolation]
+Each subgraph uses own checkpointer.\\
+\textbf{Fix:} Pass single checkpointer to compile().
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[Tight Coupling]
+Subgraph depends on parent structure.\\
+\textbf{Fix:} Use input\_map, output\_map for mapping.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary: Subgraphs Cheat Sheet}
+\begin{conceptbox}[Key Points]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Define: \texttt{builder.compile()}
+\item Add to parent: \texttt{add\_node("name", subgraph)}
+\item Shared keys auto-sync state
+\item \texttt{compose()} for complex mapping
+\item Same checkpointer for all children
+\item Streaming bubbles up
+\item Interrupt works in subgraph nodes
+\item Keep 2-3 levels deep
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Self-Check Questions}
+\begin{enumerate}
+\setlength{\itemsep}{2pt}
+\item Why use subgraphs vs one large?
+\item How add compiled graph as node?
+\item Parent vs child state difference?
+\item How shared keys work?
+\item When use \texttt{compose()}?
+\item Checkpoints across boundaries?
+\item Streaming bubbles up?
+\item Nesting depth recommendation?
+\end{enumerate}
+\end{frame}
+
+\end{document}

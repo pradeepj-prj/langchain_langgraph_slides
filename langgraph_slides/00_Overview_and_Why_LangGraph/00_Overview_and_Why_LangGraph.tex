@@ -1,0 +1,415 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangGraph v1.0.x}
+\subtitle{Section 00: Overview \& Why LangGraph}
+\author{Agentic AI Foundations}
+\date{March 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{Mental Model}
+\begin{frame}[t]{LangGraph: Graph-Based Agent Orchestration}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+\begin{conceptbox}[Core Idea]
+LangGraph is a framework for building \textbf{stateful, multi-step agent applications as directed graphs}, where:
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{Nodes} = computational steps (LLM calls, tool execution, data processing)
+  \item \textbf{Edges} = transitions between nodes (control flow)
+  \item \textbf{State} = shared data that flows through the graph
+  \item \textbf{Cycles} = looping paths for agentic decision-making
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+Think of LangGraph as \textit{``orchestrating conversations as graphs''}-not linear chains, but flexible, cyclic workflows.
+\end{frame}
+
+\section{The Problem}
+\begin{frame}[t]{Why Chains Aren't Enough}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+\begin{warningbox}[Limitations of Linear Pipelines]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{No cycles:} can't loop back (agents need to reason -> act → reason again)
+  \item \textbf{Stateless:} each step loses context of previous decisions
+  \item \textbf{No branching:} can't route to different paths based on conditions
+  \item \textbf{No human-in-the-loop:} no pause points for human approval
+  \item \textbf{Hard to debug:} linear flow obscures agent decision logic
+\end{itemize}
+\end{warningbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Example: ReAct Agent]
+ReAct (Reasoning + Acting) is inherently cyclic: \textit{Thought} -> \textit{Action} → \textit{Observation} → back to \textit{Thought}. Chains can fake this with structured outputs, but can't truly express the loop.
+\end{tipbox}
+\end{frame}
+
+\section{What is LangGraph}
+\begin{frame}[t]{LangGraph: Definition \& Scope}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+\textbf{LangGraph} is a low-level library for orchestrating agentic workflows as directed graphs.
+
+\vspace{0.15cm}
+
+\begin{codebox}[What You Build]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Agent loops (ReAct, ReWOO, langgraph-agent-patterns)
+  \item Multi-turn conversations with state
+  \item Workflows with branching, looping, fan-out/fan-in
+  \item Persistent, resumable applications
+  \item Human approval workflows
+\end{itemize}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Philosophy]
+LangGraph = \textbf{low-level} orchestration primitives. Build once, use a hundred different ways. Pairs with LangChain (runnable, prompt, tool abstractions).
+\end{tipbox}
+\end{frame}
+
+\section{LangGraph vs LangChain}
+\begin{frame}[t]{LangGraph vs LangChain}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{tabular}{p{4cm}p{5.5cm}p{5.5cm}}
+\toprule
+\textbf{Aspect} & \textbf{LangChain} & \textbf{LangGraph} \\
+\midrule
+\textbf{Level} & High-level convenience & Low-level orchestration \\
+\textbf{Use case} & Quick chains, RAG, prompt templates & Agents, workflows, cycles \\
+\textbf{State} & Implicit (context window) & Explicit, typed, persistent \\
+\textbf{Cycles} & No native support & Core feature \\
+\textbf{Control flow} & Sequential (mostly) & Explicit routing \& branching \\
+\textbf{Debugging} & Callbacks, logging & Introspectable graphs \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[The Relationship]
+LangGraph \textit{uses} LangChain primitives (runnables, tools, chat models). But LangGraph is the orchestration layer for \textbf{multi-step, interactive workflows}.
+\end{conceptbox}
+\end{frame}
+
+\section{Key Value Props}
+\begin{frame}[t]{Key Value Propositions}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{tipbox}[5 Pillars of LangGraph]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{Cycles:} Loop back for agentic reasoning (agent patterns)
+  \item \textbf{State:} Typed, persistent, multi-step workflows
+  \item \textbf{Persistence:} Save/resume execution (checkpointing)
+  \item \textbf{Human-in-the-loop:} Pause for human approval or input
+  \item \textbf{Streaming:} Stream token-by-token output without loading full response
+\end{itemize}
+\end{tipbox}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Why This Matters]
+These features unlock use cases like \textit{multi-step planning}, \textit{tool-use agents}, \textit{approval workflows}, \textit{long-running tasks}, and \textit{complex reasoning chains}.
+\end{conceptbox}
+\end{frame}
+
+\section{Graph Mental Model}
+\begin{frame}[t,shrink=5]{The Graph Mental Model: Nodes, Edges, State}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.03cm}
+
+{\footnotesize
+\begin{tabular}{p{2.6cm}p{5.8cm}}
+\toprule
+\textbf{Comp.} & \textbf{Definition} \\
+\midrule
+\textbf{Nodes} & Compute; return updates \\
+\textbf{Edges} & Routes between nodes \\
+\textbf{State} & Shared data \\
+\textbf{Cond. Edge} & Routes on conditions \\
+\textbf{START/END} & Entry/exit \\
+\bottomrule
+\end{tabular}
+
+Nodes->partial updates; graph merges. Analogy: nodes=intersections, edges=roads.
+}
+\end{frame}
+
+\section{Ecosystem}
+\begin{frame}[t,shrink=3]{LangGraph Ecosystem}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{conceptbox}[Stack]
+\setlength{\itemsep}{0.5pt}
+\begin{itemize}
+  \item \textbf{Core:} StateGraph, compilation, invoke
+  \item \textbf{Checkpoint:} Persistence (save/resume)
+  \item \textbf{Platform:} Cloud deployment, jobs
+  \item \textbf{LangSmith:} Monitoring, evaluation
+\end{itemize}
+\end{conceptbox}
+}
+\end{frame}
+
+\section{Installation}
+\begin{frame}[fragile,t]{Installation \& Setup}
+\vspace{0.1cm}
+
+\begin{codebox}[pip install]
+\begin{lstlisting}
+pip install langgraph langgraph-checkpoint
+pip install langchain langchain-community
+pip install python-dotenv
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[API Keys]
+Set environment variables for LLM providers:
+\begin{lstlisting}
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+\end{lstlisting}
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{conceptbox}[Verify Installation]
+\begin{lstlisting}
+python -c "import langgraph; print(langgraph.__version__)"
+# Output: 1.0.x
+\end{lstlisting}
+\end{conceptbox}
+\end{frame}
+
+\section{Your First Program}
+\begin{frame}[fragile,t,shrink=3]{Your First LangGraph Program (Minimal)}
+\vspace{0.02cm}
+
+\begin{codebox}[Minimal Chatbot]
+\begin{lstlisting}
+from langgraph.graph import StateGraph, START, END
+from typing_extensions import TypedDict
+
+class State(TypedDict):
+    messages: list
+
+def chatbot(state):
+    return {"messages": state["messages"] + ["Hi"]}
+
+graph = StateGraph(State)
+graph.add_node("chatbot", chatbot)
+graph.add_edge(START, "chatbot")
+graph.add_edge("chatbot", END)
+compiled = graph.compile()
+result = compiled.invoke({"messages": []})
+\end{lstlisting}
+\end{codebox}
+
+{\footnotesize Pattern: Define -> Add → Compile → Invoke}
+\end{frame}
+
+\section{Package Architecture}
+\begin{frame}[t,shrink=5]{Package Architecture}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.03cm}
+
+\begin{tabular}{p{3.2cm}p{9cm}}
+\toprule
+\textbf{Package} & \textbf{Purpose} \\
+\midrule
+\textbf{langgraph} & Core: StateGraph, nodes, edges, compilation \\
+\textbf{langgraph.graph} & Graph classes, START/END, builders \\
+\textbf{langgraph.checkpoint} & Persistence backends (save/resume) \\
+\textbf{langgraph-platform} & Cloud deployment, workers \\
+\textbf{langgraph-supervisor} & Multi-agent orchestration \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.05cm}
+
+\begin{tipbox}[Common Imports]
+{\footnotesize \texttt{from langgraph.graph import StateGraph, START, END}}
+\end{tipbox}
+\end{frame}
+
+\section{Core Concepts}
+\begin{frame}[t,shrink=3]{Core Concepts Preview Table}
+\vspace{0.05cm}
+
+\begin{tabular}{p{2.5cm}p{2.8cm}p{5.2cm}}
+\toprule
+\textbf{Concept} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\texttt{State} & TypedDict & Shared data; merged via reducers \\
+\texttt{Reducer} & Function & Merges state updates \\
+\texttt{Node} & Function & Computes state updates \\
+\texttt{Edge} & Connection & Routes node-to-node \\
+\texttt{Conditional Edge} & Router & Routes based on state \\
+\texttt{START / END} & Special & Entry/exit points \\
+\texttt{StateGraph} & Class & Orchestrates graph \\
+\texttt{Compiled Graph} & Runnable & Has \texttt{invoke()}, \texttt{stream()} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.1cm}
+
+{\scriptsize Each is fundamental. Sections 01-03 dive deep.}
+\end{frame}
+
+\section{LangGraph vs Alternatives}
+\begin{frame}[t,shrink=5]{LangGraph vs Alternatives}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{tabular}{p{1.6cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
+\toprule
+\textbf{} & \textbf{LangGraph} & \textbf{AutoGen} & \textbf{CrewAI} & \textbf{Raw} \\
+\midrule
+\textbf{State} & Typed & Implicit & Implicit & Ad-hoc \\
+\textbf{Cycles} & Native & Yes & Yes & Manual \\
+\textbf{Persist} & Yes & No & No & No \\
+\textbf{Debug} & Great & Good & Good & Hard \\
+\textbf{Flexibility} & Very high & Med & Med & Highest \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+{\footnotesize
+\begin{itemize}
+  \item Fine control over flow, persistence, debugging
+\end{itemize}
+}
+\end{tipbox}
+\end{frame}
+
+\section{Learning Path}
+\begin{frame}[t,shrink=3]{Learning Path Ahead}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{tipbox}[Sections 00-03]
+\setlength{\itemsep}{0.5pt}
+\begin{itemize}
+  \item \textbf{Sec 00:} Overview
+  \item \textbf{Sec 01:} State, nodes, edges
+  \item \textbf{Sec 02:} Building graphs
+  \item \textbf{Sec 03:} Conditional routing
+\end{itemize}
+\end{tipbox}
+
+\vspace{0.05cm}
+
+Beyond: persistence, tools, streaming, deployment.
+}
+\end{frame}
+
+\section{Summary \& Cheat Sheet}
+\begin{frame}[t,shrink=4]{Summary \& Cheat Sheet}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{conceptbox}[Key Points]
+\setlength{\itemsep}{0.5pt}
+\begin{itemize}
+  \item Graph-based orchestration (cycles, state, persistence)
+  \item Chains can't loop; graphs can
+  \item Core: nodes, edges, state
+  \item Pattern: define -> add → compile → invoke
+\end{itemize}
+\end{conceptbox}
+
+Sequential = LangChain. Looping/agentic = LangGraph.
+}
+\end{frame}
+
+\section{Self-Check}
+\begin{frame}[t,shrink=3]{Self-Check Questions}
+\setlength{\itemsep}{0pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{enumerate}
+\setlength{\itemsep}{0.5pt}
+  \item Why can't linear chains express agent loops?
+  \item What are the three core components of LangGraph?
+  \item What is a reducer and why does state need one?
+  \item How does LangGraph differ from LangChain?
+  \item Name two value propositions.
+  \item What is the basic workflow to create and run?
+  \item When would you choose LangGraph over raw code?
+\end{enumerate}
+
+\vspace{0.05cm}
+
+\textbf{Quick Answers:} (1) Chains are linear. (2) Nodes, edges, state. (3) Merges updates; tracks state. (4) Low-level vs high-level. (5) Cycles, persistence. (6) Define -> add → compile → invoke. (7) Complex workflows.
+}
+\end{frame}
+
+\end{document}

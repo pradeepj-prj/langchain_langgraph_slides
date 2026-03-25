@@ -1,0 +1,354 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\tiny,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 08: Streaming}
+\subtitle{Real-Time Output from Long-Running Graphs}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Mental Model: Streaming}
+\begin{conceptbox}[Core Idea]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Real-time output from long-running graphs
+\item Users get feedback while computation happens
+\item Not waiting for final result
+\item Similar to terminal output vs batch jobs
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Flow]
+Start \,->\, Node A (emit) \,→\, Node B (emit) \,→\, End
+\end{tipbox}
+\docref{Streaming Guide}
+\end{frame}
+
+\begin{frame}
+\frametitle{Why Streaming Matters}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{warningbox}[Without Streaming]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item User waits silently
+\item Agent thinks 30+ seconds
+\item Final answer arrives
+\item Poor UX, high dropout
+\end{itemize}
+\end{warningbox}
+\column{0.48\textwidth}
+\begin{tipbox}[With Streaming]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Real-time tokens flow
+\item Intermediate results show
+\item Progress visible to user
+\item Better perceived latency
+\end{itemize}
+\end{tipbox}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{The stream() Method: Basics}
+\begin{tipbox}[Synchronous Streaming]
+\texttt{for event in graph.stream(\{"input": "hello"\}):}\\
+\quad\texttt{print(event)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Event Structure]
+Each event is a dict: \texttt{\{"node\_name": \{"key": value\}\}}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{warningbox}[Default]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Mode: \texttt{stream\_mode="values"}
+\item Returns full state after each node
+\end{itemize}
+\end{warningbox}
+\docref{graph.stream()}
+\end{frame}
+
+\begin{frame}
+\frametitle{Stream Modes: The Big Picture}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Mode} & \textbf{Output} & \textbf{Use} \\
+\midrule
+\texttt{values} & Full state & Show progress \\
+\texttt{updates} & Node deltas & Lightweight \\
+\texttt{messages} & LLM tokens & Display text \\
+\toprule
+\end{tabular}
+\end{center}
+\vspace{0.1cm}
+\begin{conceptbox}[Combine]
+Pass \texttt{stream\_mode=["values", "messages"]} for multiple.
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{stream\_mode="values": Full State}
+\begin{tipbox}[Example]
+\texttt{stream\_mode = "values"}\\
+\texttt{for chunk in graph.stream(input\_data):}\\
+\quad\texttt{print(chunk)}
+\end{tipbox}
+\vspace{0.1cm}
+\textbf{Output:} \texttt{\{"node\_a": \{"count": 5\}\}}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Display evolving state in web UI
+\item Monitor multiple state fields
+\item Dashboard-style real-time updates
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{stream\_mode="updates": Deltas Only}
+\begin{tipbox}[Example]
+\texttt{stream\_mode = "updates"}\\
+\texttt{for chunk in graph.stream(input\_data):}\\
+\quad\texttt{print(chunk)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Reduce network payload
+\item Lightweight frontend apps
+\item Battery-sensitive devices
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{stream\_mode="messages": Token-by-Token}
+\begin{tipbox}[Example]
+\texttt{for chunk in graph.stream(input\_data):}\\
+\quad\texttt{if chunk.get("content"):}\\
+\quad\quad\texttt{print(chunk["content"], end="")}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Display LLM output streaming
+\item Chat-like interfaces
+\item Token-level inspection
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Multiple Modes Simultaneously}
+\begin{tipbox}[Combine modes]
+\texttt{stream\_mode=["values", "messages"]}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{warningbox}[Output Structure]
+Each chunk: \texttt{\{"values": ..., "messages": ...\}}
+\end{warningbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Async Streaming: astream()}
+\begin{tipbox}[Async Example]
+\texttt{async for chunk in graph.astream(input\_data):}\\
+\quad\texttt{print(chunk)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[astream\_events()]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Low-level event hooks
+\item Supports \texttt{on\_start}, \texttt{on\_end}, \texttt{on\_error}
+\item Useful for debugging
+\end{itemize}
+\end{tipbox}
+\docref{astream(), astream\_events()}
+\end{frame}
+
+\begin{frame}
+\frametitle{Custom Streaming Events}
+\begin{tipbox}[Dispatch from Node]
+\texttt{config["run\_manager"].on\_text("Processing...")}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Event Hooks]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \texttt{on\_text()}: emit text events
+\item \texttt{on\_tool\_start()}: tool invocation
+\item \texttt{on\_tool\_end()}: tool completion
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Streaming in Web Applications}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{tipbox}[Server-Sent Events]
+Flask/FastAPI pushes updates via SSE.
+\end{tipbox}
+\column{0.48\textwidth}
+\begin{tipbox}[WebSocket]
+Bidirectional communication; real-time chat.
+\end{tipbox}
+\end{columns}
+\vspace{0.1cm}
+\docref{Web Framework Integration}
+\end{frame}
+
+\begin{frame}
+\frametitle{Streaming Data Flow}
+\begin{tipbox}[Flow Steps]
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\item User Input -> Graph
+\item Graph -> Stream Loop per node
+\item Node output -> Emit Event
+\item Event -> UI/Client display
+\item Feedback -> continuous updates
+\end{enumerate}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Filtering Stream Output}
+\begin{tipbox}[By Node Name]
+\texttt{if "llm\_node" in chunk:}\\
+\quad\texttt{process\_llm\_output(chunk["llm\_node"])}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Common Filters]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Filter by name: \texttt{if "node\_x" in chunk}
+\item Filter by type: \texttt{if event["type"] == "start"}
+\item Skip internal nodes with \texttt{\_}
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Performance Considerations}
+\begin{warningbox}[Common Issues]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Large state objects slow network
+\item Frequent context switches
+\item Memory pressure with many streams
+\end{itemize}
+\end{warningbox}
+\vspace{0.1cm}
+\begin{tipbox}[Best Practices]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Use \texttt{updates} mode for large state
+\item Emit only relevant fields
+\item Scale horizontally
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Common Pitfalls}
+\begin{warningbox}[Blocking in Stream]
+Don't do I/O inside loop; queue to background.
+\end{warningbox}
+\vspace{0.1cm}
+\begin{warningbox}[Missing Async]
+Use \texttt{astream()} in async context, not \texttt{stream()}.
+\end{warningbox}
+\vspace{0.1cm}
+\begin{warningbox}[Unhandled Errors]
+Events can be lost if not caught; add error handling.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary: Streaming Cheat Sheet}
+\begin{conceptbox}[Key Points]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \texttt{stream()} sync, \texttt{astream()} async
+\item Modes: \texttt{"values"}, \texttt{"updates"}, \texttt{"messages"}
+\item Combine with list: \texttt{["values", "messages"]}
+\item Emit custom events from nodes
+\item Use SSE/WebSocket for web
+\item Filter by node name and type
+\item Avoid blocking; use async
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Self-Check Questions}
+\begin{enumerate}
+\setlength{\itemsep}{2pt}
+\item Difference between \texttt{stream()} and \texttt{astream()}?
+\item When use \texttt{updates} vs \texttt{values}?
+\item How combine multiple modes?
+\item Name one blocking mistake.
+\item Difference between SSE and WebSocket?
+\item Filter stream by node name?
+\item What does \texttt{on\_text()} do?
+\end{enumerate}
+\end{frame}
+
+\end{document}

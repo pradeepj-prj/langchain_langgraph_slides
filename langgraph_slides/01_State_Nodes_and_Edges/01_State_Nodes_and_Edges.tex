@@ -1,0 +1,652 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangGraph v1.0.x}
+\subtitle{Section 01: State, Nodes \& Edges}
+\author{Agentic AI Foundations}
+\date{March 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{Mental Model}
+\begin{frame}[t]{Three Building Blocks of Every LangGraph App}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[State + Nodes + Edges = Graph]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{State:} The shared data structure (TypedDict)
+  \item \textbf{Nodes:} Functions that compute and update state
+  \item \textbf{Edges:} Routes that connect nodes together
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+Every LangGraph application starts here. Master these three, and you can build any workflow.
+
+\vspace{0.15cm}
+
+\begin{tikzpicture}[node distance=1.2cm, scale=0.9, every node/.style={font=\scriptsize}]
+  \node[draw, fill=lcblue!30, rounded rectangle, minimum width=1.5cm] (s) {State};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of s, minimum width=1.5cm] (n) {Node};
+  \node[draw, fill=lcorange!30, rounded rectangle, right=of n, minimum width=1.5cm] (e) {Edge};
+  \path[->] (s) -- (n);
+  \path[->] (n) -- (e);
+\end{tikzpicture}
+\end{frame}
+
+\section{State Deep Dive}
+\begin{frame}[fragile,t]{State: TypedDict Schema}
+\vspace{0.05cm}
+
+\begin{conceptbox}[State is a TypedDict]
+State defines the \textit{shape} of data flowing through your graph. It's just a Python dict with types.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Example State]
+\begin{lstlisting}
+from typing_extensions import TypedDict
+
+class State(TypedDict):
+    user_input: str
+    messages: list
+    decision: str
+\end{lstlisting}
+\end{codebox}
+
+\begin{tipbox}[Why]
+Type hints enable validation and IDE autocomplete.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile,t,shrink=2]{State Fields: Defining Your Schema}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{tabular}{p{2.8cm}p{6cm}}
+\toprule
+\textbf{Pattern} & \textbf{Use Case} \\
+\midrule
+\texttt{user\_input: str} & Single string field \\
+\texttt{messages: list} & Chat history, append-only \\
+\texttt{score: float} & Numeric decision \\
+\texttt{context: dict} & Nested data \\
+\texttt{Optional[str]} & Field can be None \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.08cm}
+
+\begin{warningbox}[No Inheritance]
+\texttt{TypedDict} does NOT support inheritance. Use composition.
+\end{warningbox}
+
+\vspace{0.05cm}
+
+{\footnotesize State fields are the interface. Good design = good graph.}
+\end{frame}
+
+\section{Reducers}
+\begin{frame}[fragile,t]{Reducers: How State Updates Work}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Default Behavior: Overwrite]
+When a node returns \texttt{\{"field": new\_value\}}, the state field is \textit{replaced}.
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+\begin{codebox}[Default Merge: Overwrite]
+\begin{lstlisting}
+# Node returns partial state
+return {"score": 0.85}  # replaces state["score"]
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Why Reducers Matter]
+For \textbf{lists} (messages, history), you usually want to \textit{append}, not replace. That's where reducers come in.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile,t,shrink=5]{Annotated: Specifying Reducers}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Annotated Pattern]
+Use \texttt{Annotated[type, reducer\_function]} to specify custom merge behavior.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Example: List Append]
+\begin{lstlisting}
+from typing_extensions import TypedDict, Annotated
+import operator
+
+class State(TypedDict):
+    messages: Annotated[list, operator.add]
+    score: float
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[What happens]
+\texttt{operator.add} means: \texttt{state["messages"] = state["messages"] + new\_messages}. Appends!
+\end{tipbox}
+
+\vspace{0.1cm}
+
+{\footnotesize When a node returns \texttt{\{"messages": [new\_msg]\}}, it appends, not replaces.}
+\end{frame}
+
+\section{Built-in Reducers}
+\begin{frame}[fragile,t,shrink=2]{Built-in Reducers: operator.add}
+\vspace{0.05cm}
+
+\begin{tabular}{p{3.5cm}p{6.5cm}}
+\toprule
+\textbf{Reducer} & \textbf{Behavior} \\
+\midrule
+\texttt{operator.add} & \texttt{field + new\_value} (list concat) \\
+\texttt{add\_messages} & Smart message appending (dedup, etc) \\
+\texttt{Custom} & Define your own merging logic \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.15cm}
+
+\begin{codebox}[operator.add Example]
+\begin{lstlisting}
+class State(TypedDict):
+    items: Annotated[list, operator.add]
+
+# Node returns {"items": [4, 5]}
+# Result: state["items"] = [1, 2, 3] + [4, 5]
+#       = [1, 2, 3, 4, 5]
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\begin{frame}[fragile,t,shrink=5]{add\_messages: The Chat Reducer}
+\vspace{0.1cm}
+
+\begin{conceptbox}[add\_messages: Most Important Reducer]
+Built-in reducer from LangChain. Intelligently merges chat messages: handles duplicates, preserves order.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Chat State Example]
+\begin{lstlisting}
+from langchain_core.messages import BaseMessage
+from langgraph.graph import add_messages
+
+class State(TypedDict):
+    messages: Annotated[list[BaseMessage],
+                        add_messages]
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Why add\_messages?]
+Handles HumanMessage, AIMessage, ToolMessage intelligently. Deduplicates, respects IDs.
+\end{tipbox}
+
+{\footnotesize Default for LLM workflows.}
+\end{frame}
+
+\section{Complex State}
+\begin{frame}[fragile,t,shrink=3]{Complex State: Nested, Optional, Multiple}
+\vspace{0.02cm}
+
+\begin{codebox}[Advanced State Pattern]
+\begin{lstlisting}
+from typing_extensions import TypedDict, Annotated
+from typing import Optional
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+    user: Optional[dict]  # Optional field
+    metadata: dict  # Nested dict
+    scores: Annotated[list[float], operator.add]
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Guidelines]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Keep state \textit{flat} (avoid deep nesting)
+  \item Use Annotated for lists/accumulators
+  \item Optional for fields that may not exist yet
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\section{Nodes}
+\begin{frame}[fragile,t]{Nodes: Functions That Update State}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Node Signature]
+A node is a function: \texttt{(state: State) -> dict}. Takes state, returns partial updates.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Simple Node]
+\begin{lstlisting}
+def process_input(state: State) -> dict:
+    # Do computation
+    result = state["user_input"].upper()
+    # Return partial state update
+    return {"decision": result}
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{warningbox}[Return Partial, Not Full]
+Return ONLY the fields you update. The graph merges with existing state automatically.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Node Return Values}
+\vspace{0.1cm}
+
+\begin{tabular}{p{4cm}p{7cm}}
+\toprule
+\textbf{Pattern} & \textbf{Effect} \\
+\midrule
+\texttt{\{field: value\}} & Update \textit{that} field (merge) \\
+\texttt{\{field1: v1, field2: v2\}} & Update multiple fields \\
+\texttt{\{\}} & Return empty dict (no update) \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.15cm}
+
+\begin{codebox}[Examples]
+\begin{lstlisting}
+return {"score": 0.9}  # Update score only
+return {"a": 1, "b": 2}  # Update a and b
+return {}  # No state change
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize The graph \textit{merges} your return dict into state. No need to copy full state.}
+\end{frame}
+
+\section{Node Patterns}
+\begin{frame}[fragile,t]{Node Patterns: LLM Calls}
+\vspace{0.05cm}
+
+\begin{codebox}[LLM Node]
+\begin{lstlisting}
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+llm = ChatOpenAI(model="gpt-4")
+
+def llm_node(state: State) -> dict:
+    response = llm.invoke(state["messages"])
+    return {"messages": [response]}
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+{\footnotesize Works with \texttt{add\_messages} reducer: appends the response to \texttt{messages}.}
+\end{frame}
+
+\begin{frame}[fragile,t]{Node Patterns: Tool Execution}
+\vspace{0.05cm}
+
+\begin{codebox}[Tool Node]
+\begin{lstlisting}
+def tool_executor(state: State) -> dict:
+    tool_name = state["tool"]
+    tool_input = state["tool_input"]
+    result = execute_tool(tool_name, tool_input)
+    return {"tool_result": result}
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+{\footnotesize Bridges LLM requests and actual execution.}
+\end{frame}
+
+\begin{frame}[fragile,t]{Node Patterns: Routing Logic}
+\vspace{0.05cm}
+
+\begin{codebox}[Router Node]
+\begin{lstlisting}
+def router(state: State) -> dict:
+    if state["score"] > 0.5:
+        decision = "approve"
+    else:
+        decision = "reject"
+    return {"decision": decision}
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+{\footnotesize Simple conditional logic. (For graph-level routing, use conditional edges-next section.)}
+\end{frame}
+
+\section{Edges}
+\begin{frame}[t]{Edges: Connecting Nodes}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Three Types of Edges]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{Normal edge:} Node A -> Node B (always)
+  \item \textbf{Conditional edge:} Node A -> (B or C or ...) based on state
+  \item \textbf{START / END:} Special entry/exit nodes
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+Edges define the \textit{control flow}. They answer: ``After this node, where do we go?''
+\end{frame}
+
+\begin{frame}[fragile,t]{Normal Edges: add\_edge()}
+\vspace{0.1cm}
+
+\begin{codebox}[Adding Edges]
+\begin{lstlisting}
+graph.add_edge("node_a", "node_b")
+graph.add_edge(START, "first_node")
+graph.add_edge("last_node", END)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[START and END]
+\texttt{START} = entry point. \texttt{END} = exit point. Graph begins at START, terminates at END.
+\end{tipbox}
+
+\vspace{0.15cm}
+
+{\footnotesize A simple linear graph: START -> A → B → C → END}
+\end{frame}
+
+\section{Conditional Edges}
+\begin{frame}[fragile,t]{Conditional Edges: add\_conditional\_edges()}
+\vspace{0.05cm}
+
+\begin{conceptbox}[Router Functions]
+A router function reads state and returns the \textit{name} of the next node.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Example]
+\begin{lstlisting}
+def route_decision(state: State) -> str:
+    if state["decision"] == "approve":
+        return "approve_node"
+    else:
+        return "reject_node"
+
+graph.add_conditional_edges(
+    "router",
+    route_decision,
+    {"approve_node": "approve_node",
+     "reject_node": "reject_node"}
+)
+\end{lstlisting}
+\end{codebox}
+
+{\footnotesize Router returns node name string.}
+\end{frame}
+
+\begin{frame}[t,shrink=3]{START and END: Special Nodes}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.02cm}
+
+{\footnotesize
+\begin{tabular}{p{2.5cm}p{7cm}}
+\toprule
+\textbf{Node} & \textbf{Purpose} \\
+\midrule
+\texttt{START} & Entry point. Initial state flows from here. \\
+\texttt{END} & Exit point. Graph terminates, returns final state. \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.08cm}
+
+\begin{tipbox}[Must Have]
+\setlength{\itemsep}{0.5pt}
+{\footnotesize
+\begin{itemize}
+  \item Edge from START
+  \item Edge to END
+\end{itemize}
+}
+\end{tipbox}
+\end{frame}
+
+\section{State Flow}
+\begin{frame}[t]{How State Flows Through Nodes and Edges}
+\vspace{0.1cm}
+
+\begin{tikzpicture}[node distance=1.5cm, scale=0.95, every node/.style={font=\scriptsize}]
+  \node[draw, fill=lcblue!30, rounded rectangle] (s1) {START\n(initial)};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of s1] (n1) {Node A};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of n1] (n2) {Node B};
+  \node[draw, fill=lcred!30, rounded rectangle, right=of n2] (end) {END\n(return)};
+
+  \path[->, thick] (s1) -- node[above, font=\tiny] {state} (n1);
+  \path[->, thick] (n1) -- node[above, font=\tiny] {merged} (n2);
+  \path[->, thick] (n2) -- node[above, font=\tiny] {final} (end);
+\end{tikzpicture}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Merging at Each Step]
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+  \item Node receives \textit{full} state
+  \item Node returns \textit{partial} dict
+  \item Graph merges: \texttt{state.update(return\_dict)}
+  \item Next node gets updated state
+\end{enumerate}
+\end{conceptbox}
+\end{frame}
+
+\section{Graph Lifecycle}
+\begin{frame}[fragile,t,shrink=5]{The Graph Lifecycle}
+\vspace{0.05cm}
+
+\begin{codebox}[Step by Step]
+\begin{lstlisting}
+# 1. Define state
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+# 2. Create graph
+graph = StateGraph(State)
+
+# 3. Add nodes
+graph.add_node("llm", llm_node)
+
+# 4. Add edges
+graph.add_edge(START, "llm")
+graph.add_edge("llm", END)
+
+# 5. Compile
+compiled = graph.compile()
+
+# 6. Invoke
+result = compiled.invoke({"messages": []})
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\section{Common Mistakes}
+\begin{frame}[fragile,t,shrink=2]{Common Mistakes}
+\vspace{0.05cm}
+
+\begin{warningbox}[Mistake 1: Returning Full State]
+\begin{lstlisting}
+# WRONG
+def node(state: State) -> State:
+    return {"a": 1, "b": 2, "c": 3}  # All fields
+
+# RIGHT
+def node(state: State) -> dict:
+    return {"a": 1}  # Only what changes
+\end{lstlisting}
+\end{warningbox}
+
+\vspace{0.1cm}
+
+\begin{warningbox}[Mistake 2: Forgetting START/END]
+\begin{lstlisting}
+# WRONG: no entry/exit
+graph.add_edge("A", "B")
+
+# RIGHT
+graph.add_edge(START, "A")
+graph.add_edge("B", END)
+\end{lstlisting}
+\end{warningbox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Common Mistakes: Reducer Issues}
+\vspace{0.1cm}
+
+\begin{warningbox}[Mistake 3: Missing Reducer on List]
+\begin{lstlisting}
+# WRONG: messages will be replaced, not appended
+class State(TypedDict):
+    messages: list
+
+# RIGHT: use add_messages reducer
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+\end{lstlisting}
+\end{warningbox}
+
+\vspace{0.15cm}
+
+{\footnotesize Without a reducer, returning \texttt{\{"messages": [new]\}} replaces the entire list!}
+\end{frame}
+
+\section{Summary}
+\begin{frame}[t,shrink=2]{Summary: State, Nodes, Edges}
+\setlength{\itemsep}{0.5pt}
+\vspace{0.05cm}
+
+\begin{conceptbox}[The Three Pillars]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \textbf{State:} TypedDict schema + Annotated reducers
+  \item \textbf{Nodes:} Functions (state -> dict updates)
+  \item \textbf{Edges:} Routes (normal, conditional, START, END)
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Key Patterns]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item \texttt{Annotated[list, operator.add]} for appending
+  \item \texttt{add\_messages} for chat history
+  \item Return partial dicts from nodes
+  \item Define state before writing nodes
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[t,shrink=5]{Self-Check Questions}
+\setlength{\itemsep}{0pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{enumerate}
+\setlength{\itemsep}{0.5pt}
+  \item What is the purpose of a reducer in state?
+  \item How does \texttt{operator.add} differ from default overwrite?
+  \item What should a node function return?
+  \item Why is \texttt{add\_messages} special for chat?
+  \item What are the three edge types?
+  \item What happens if you forget the START edge?
+  \item How is state merged after a node executes?
+\end{enumerate}
+
+\vspace{0.05cm}
+
+\textbf{Quick Answers:} (1) Merges updates (not replace). (2) Appends instead of replaces. (3) Partial dict of updates. (4) Smart chat merge logic. (5) Normal, conditional, START/END. (6) Graph won't start. (7) \texttt{state.update(node\_return)}.
+}
+\end{frame}
+
+\end{document}

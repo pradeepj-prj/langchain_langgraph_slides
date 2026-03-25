@@ -1,0 +1,339 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{basicstyle=\ttfamily\tiny,language=Python}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 09: Memory}
+\subtitle{Short-Term and Long-Term Memory in Agents}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Mental Model: Agent Memory}
+\begin{conceptbox}[Two Types]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Short-term: conversation history within thread
+\item Long-term: persistent knowledge across threads
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Analogy]
+Short-term like notebook in session; long-term like knowledge base.
+\end{tipbox}
+\docref{Memory Guide}
+\end{frame}
+
+\begin{frame}
+\frametitle{Short-Term Memory Basics}
+\begin{tipbox}[Via Checkpointing]
+\texttt{config = \{"configurable": \{"thread\_id": "user\_123"\}\}}\\
+\texttt{graph.invoke(state, config)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[What Gets Saved]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Graph state at each step
+\item Message history preserved
+\item Accessible across invocations
+\end{itemize}
+\end{tipbox}
+\docref{Checkpointing}
+\end{frame}
+
+\begin{frame}
+\frametitle{Managing Message History}
+\begin{warningbox}[The Problem]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Conversation grows unbounded
+\item More tokens = slower, costlier
+\item Context window fills up
+\item Performance degrades
+\end{itemize}
+\end{warningbox}
+\vspace{0.1cm}
+\begin{tipbox}[Solutions]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Trimming: keep last N messages
+\item Summarization: condense old messages
+\item Windowing: fixed-size rolling window
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{trim\_messages Utility}
+\begin{tipbox}[Basic Usage]
+\texttt{trimmed = trim\_messages(messages,}\\
+\texttt{max\_tokens=2000, strategy="last")}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Strategies]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \texttt{"last"}: keep last N messages
+\item \texttt{"first"}: keep first N messages
+\item \texttt{"rolling"}: maintain window
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary Memory}
+\begin{tipbox}[Summarization Pattern]
+\texttt{old = messages[:-5]; recent = messages[-5:]}\\
+\texttt{summary = llm.invoke(f"Summarize: \{old\}")}\\
+\texttt{condensed = [summary\_msg] + recent}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Long multi-day conversations
+\item Preserve context without bloat
+\item Keep gist of early decisions
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Long-Term Memory: Store Interface}
+\begin{conceptbox}[Store Concept]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Persist facts, preferences, learned info
+\item Accessible across threads/sessions
+\item Searchable by key or semantics
+\item Decoupled from conversation state
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Examples]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item User preferences (theme, language)
+\item Domain facts (addresses, rules)
+\item Interaction history
+\end{itemize}
+\end{tipbox}
+\docref{Store Interface}
+\end{frame}
+
+\begin{frame}
+\frametitle{InMemoryStore: Development}
+\begin{tipbox}[Basic Setup]
+\texttt{store = InMemoryStore()}\\
+\texttt{config = \{"configurable": \{"store": store\}\}}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Characteristics]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Lives in RAM, not persistent
+\item Perfect for prototyping
+\item Easy for testing and demos
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{store.put() and store.search()}
+\begin{tipbox}[put(): Store Items]
+\texttt{store.put("users", "user\_123",}\\
+\texttt{\{"theme": "dark", "language": "en"\})}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[search(): Query Items]
+\texttt{results = store.search("users",}\\
+\texttt{\{"query": "theme", "limit": 10\})}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Storing Preferences and Facts}
+\begin{tipbox}[Example]
+\texttt{def store\_user\_info(state, config):}\\
+\texttt{store = config["configurable"]["store"]}\\
+\texttt{store.put("users", user\_id,}\\
+\texttt{\{"name": state["name"], ...\})}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Later Access]
+\texttt{store.get("users", user\_id)}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Memory Namespaces}
+\begin{tipbox}[Multi-Namespace Design]
+\texttt{store.put("users", user\_id, ...)}\\
+\texttt{store.put("topics", topic\_id, ...)}\\
+\texttt{store.put("interactions", key, ...)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Benefits]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Organize by entity type
+\item Easy to clear/manage per namespace
+\item Semantic grouping
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Semantic Search}
+\begin{tipbox}[Vector-Based Search]
+\texttt{results = store.search("documents",}\\
+\texttt{\{"query": "machine learning", "limit": 5\})}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Requirements]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Store must support embeddings
+\item Requires embedding model (OpenAI)
+\item Returns ranked results by relevance
+\end{itemize}
+\end{tipbox}
+\docref{Semantic Search}
+\end{frame}
+
+\begin{frame}
+\frametitle{Short-Term vs Long-Term Memory}
+\begin{tipbox}[Memory Types]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item \textbf{Short-term (Thread)}: Messages, context
+\item \textbf{Long-term (Store)}: Preferences, facts
+\end{itemize}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Interaction]
+Thread-level state reads/writes. Store accessed for background knowledge.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Combining Both Memory Types}
+\begin{tipbox}[Unified Node]
+\texttt{prefs = store.get("users", user\_id)}\\
+\texttt{messages = state["messages"]}\\
+\texttt{prompt = build\_prompt(messages, prefs)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Pattern]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Read long-term at start
+\item Use in conversation
+\item Update store when learning
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Memory in Multi-Agent Systems}
+\begin{conceptbox}[Shared Store]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item All agents read/write same store
+\item Coordination via shared knowledge
+\item Agents learn from interactions
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{warningbox}[Isolation Patterns]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Separate namespaces per agent
+\item Read-only for some
+\item Last-write-wins conflict resolution
+\end{itemize}
+\end{warningbox}
+\docref{Multi-Agent Memory}
+\end{frame}
+
+\begin{frame}
+\frametitle{Common Memory Pitfalls}
+\begin{warningbox}[Unbounded History]
+Messages grow forever; no trimming.\\
+\textbf{Fix:} Set budget with \texttt{trim\_messages}.
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[Stale Memories]
+Store never refreshes; outdated facts.\\
+\textbf{Fix:} Version with timestamps; refresh updates.
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[Conflicts]
+Short-term and long-term contradict.\\
+\textbf{Fix:} Prioritize recent; log discrepancies.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary: Memory Cheat Sheet}
+\begin{conceptbox}[Key Points]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Short-term via checkpointing + thread\_id
+\item Use \texttt{trim\_messages()} to prevent bloat
+\item Summarize old messages for length
+\item Long-term via Store interface
+\item \texttt{store.put()}, \texttt{get()}, \texttt{search()}
+\item Use namespaces to organize
+\item Combine both in single node
+\item Handle stale with version/timestamp
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Self-Check Questions}
+\begin{enumerate}
+\setlength{\itemsep}{2pt}
+\item Difference short-term vs long-term?
+\item How checkpointing enables memory?
+\item Why trim/summarize messages?
+\item Three trim\_messages strategies?
+\item When use Store over thread?
+\item Data examples for long-term?
+\item How use namespaces in Store?
+\item Multiple agents share memory?
+\end{enumerate}
+\end{frame}
+
+\end{document}

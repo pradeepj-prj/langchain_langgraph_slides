@@ -1,0 +1,541 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangGraph v1.0.x}
+\subtitle{Section 03: Conditional Routing \& Branching}
+\author{Agentic AI Foundations}
+\date{March 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{Mental Model}
+\begin{frame}[t]{Making Graphs Dynamic with Conditional Logic}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Conditional Routing = Agentic Flow]
+Simple graphs are linear. Agents need to make \textit{decisions}. Conditional edges route based on state.
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Examples]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Tool use agent: ``Did LLM call a tool? Route to tool executor.''
+  \item Classifier: ``Route to approve or reject path.''
+  \item Retry loop: ``Did it fail? Go back to try again.''
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\section{Why Conditional Routing}
+\begin{frame}[t]{Why Conditional Routing: Decision-Making}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{warningbox}[Linear Isn't Enough]
+Linear graphs execute the same sequence every time. Agents need to \textit{decide} where to go next based on state.
+\end{warningbox}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Conditional Edges Enable]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Branching paths (A -> B or C or D)
+  \item Looping (A -> A again)
+  \item Early exit (-> END)
+  \item Dynamic workflows
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\section{Router Functions}
+\begin{frame}[fragile,t]{Router Functions: Read State, Return Next Node}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Router Signature]
+A router function reads state and returns a \textit{string} naming the next node.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Simple Router]
+\begin{lstlisting}
+def my_router(state: State) -> str:
+    if state["score"] > 0.5:
+        return "approve"
+    else:
+        return "reject"
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+{\footnotesize Router returns a string. The graph looks it up in a path map.}
+\end{frame}
+
+\section{add_conditional_edges}
+\begin{frame}[fragile,t]{add\_conditional\_edges: Source, Router, Path Map}
+\vspace{0.05cm}
+
+\begin{codebox}[Conditional Edges]
+\begin{lstlisting}
+graph.add_conditional_edges(
+    "source_node",          # From
+    my_router,              # Router function
+    {
+        "approve": "approve_node",
+        "reject": "reject_node"
+    }
+)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Three Parts]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Source node (where we're coming from)
+  \item Router function (logic to decide)
+  \item Path map (string -> node name)
+\end{itemize}
+\end{tipbox}
+\end{frame}
+
+\section{Multiple Branches}
+\begin{frame}[fragile,t]{Multiple Conditional Branches}
+\vspace{0.05cm}
+
+\begin{codebox}[Router with Many Paths]
+\begin{lstlisting}
+def route_action(state: State) -> str:
+    action = state["action"]
+    if action == "approve":
+        return "approve"
+    elif action == "reject":
+        return "reject"
+    else:
+        return "review"
+
+graph.add_conditional_edges(
+    "classifier",
+    route_action,
+    {
+        "approve": "approve_node",
+        "reject": "reject_node",
+        "review": "review_node"
+    }
+)
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\section{Default Routing}
+\begin{frame}[fragile,t]{Default/Fallback Routing}
+\vspace{0.1cm}
+
+\begin{conceptbox}[When Router Returns Unknown Value]
+Set a default fallback path.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[With Default]
+\begin{lstlisting}
+graph.add_conditional_edges(
+    "router",
+    router_fn,
+    {
+        "path_a": "node_a",
+        "path_b": "node_b"
+    },
+    default="node_default"  # Fallback
+)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize If router returns something not in the map, default catches it.}
+\end{frame}
+
+\section{Cycles and Loops}
+\begin{frame}[t]{Cycles and Loops: Agentic Feedback}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Loop Pattern]
+A node can route back to itself (or an earlier node) for iteration.
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Use Cases]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Agent think->act→observe→think cycle
+  \item Retry logic (failed? try again)
+  \item Refinement loops
+\end{itemize}
+\end{tipbox}
+
+\vspace{0.15cm}
+
+{\footnotesize LangGraph handles cycles natively. No special syntax needed.}
+\end{frame}
+
+\begin{frame}[fragile,t]{Breaking Out of Loops: Route to END}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Termination Condition]
+A loop must have a condition that routes to END, or it runs forever!
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Loop with Exit]
+\begin{lstlisting}
+def should_continue(state: State) -> str:
+    if state["done"]:
+        return "done"  # Route to END
+    else:
+        return "loop"  # Route back
+
+graph.add_conditional_edges(
+    "agent",
+    should_continue,
+    {"done": END, "loop": "agent"}
+)
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\section{tools_condition Helper}
+\begin{frame}[fragile,t]{tools\_condition: Routing on Tool Use}
+\vspace{0.05cm}
+
+\begin{conceptbox}[Common Pattern]
+Did the LLM call tools? Route to tool executor, else to END.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Using tools\_condition]
+\begin{lstlisting}
+from langgraph.prebuilt import tools_condition
+
+graph.add_conditional_edges(
+    "agent",
+    tools_condition,
+    {
+        "tools": "execute_tools",
+        "end": END
+    }
+)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize \texttt{tools\_condition} checks if last message has tool\_calls.}
+\end{frame}
+
+\section{Agent Loop Diagram}
+\begin{frame}[t]{Complete Agent Loop: Model -> Tools → Model → END}
+\vspace{0.1cm}
+
+\begin{tikzpicture}[node distance=1.2cm, scale=0.95, every node/.style={font=\scriptsize}]
+  \node[draw, fill=lcblue!30, rounded rectangle] (s) {START};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of s] (llm) {LLM};
+  \node[draw, fill=lcgreen!30, rounded rectangle, below=of llm] (tool) {Tool};
+  \node[draw, fill=lcred!30, rounded rectangle, right=of llm] (end) {END};
+
+  \path[->, thick] (s) -- (llm);
+  \path[->, thick] (llm) -- node[right, font=\tiny] {calls tools?} (tool);
+  \path[->, thick] (tool) -- (llm);
+  \path[->, thick] (llm) -- node[above, font=\tiny] {no tools} (end);
+\end{tikzpicture}
+
+\vspace{0.15cm}
+
+The agent loop: think (LLM) -> decide (router) → act (tools) → think again.
+\end{frame}
+
+\section{Branching Patterns}
+\begin{frame}[t]{Branching Patterns: Fan-Out and Fan-In}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{tipbox}[Fan-Out]
+One node routes to multiple nodes in parallel (or sequence).
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Fan-In]
+Multiple nodes converge to one. All must complete before proceeding.
+\end{tipbox}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Use Cases]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Fan-out: process multiple paths
+  \item Fan-in: aggregate results
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\section{Map-Reduce Pattern}
+\begin{frame}[fragile,t]{Map-Reduce: Process Items, Then Aggregate}
+\vspace{0.05cm}
+
+\begin{conceptbox}[Pattern]
+Fan-out to process each item, then fan-in to aggregate results.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Idea]
+\begin{lstlisting}
+# State: items: [1, 2, 3, ...]
+# Map: process each
+# Reduce: combine results
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize LangGraph supports this with conditional edges + loops.}
+\end{frame}
+
+\section{Send API}
+\begin{frame}[fragile,t]{Send API for Dynamic Fan-Out}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Dynamic Routing]
+For \textit{unknown} number of paths, use Send() to create edges dynamically.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Send Example]
+\begin{lstlisting}
+from langgraph.graph import Send
+
+def route_to_many(state):
+    return [
+        Send("worker", {"item": x})
+        for x in state["items"]
+    ]
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize Advanced pattern. Useful for variable-width fan-out.}
+\end{frame}
+
+\section{Common Mistakes}
+\begin{frame}[fragile,t]{Common Mistakes: Infinite Loops}
+\vspace{0.1cm}
+
+\begin{warningbox}[Mistake 1: Infinite Loop]
+\begin{lstlisting}
+# WRONG: routes back to self forever
+graph.add_conditional_edges(
+    "agent",
+    my_router,
+    {"continue": "agent"}
+    # Missing exit condition
+)
+\end{lstlisting}
+\end{warningbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Fix]
+Always have a condition that routes to END!
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Common Mistakes: Missing Paths in Map}
+\vspace{0.1cm}
+
+\begin{warningbox}[Mistake 2: Router Returns Unregistered Path]
+\begin{lstlisting}
+# Router returns "unknown"
+def router(state): return "unknown"
+
+# But path map doesn't have it
+graph.add_conditional_edges(
+    "node",
+    router,
+    {"path_a": "a", "path_b": "b"}
+    # "unknown" not mapped!
+)
+\end{lstlisting}
+\end{warningbox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Fix]
+Use default, or ensure router only returns known paths.
+\end{tipbox}
+\end{frame}
+
+\section{Advanced Patterns}
+\begin{frame}[t]{Advanced Patterns Summary}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{tipbox}[Sequential Branching]
+Node A -> (B or C or D) in sequence.
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Parallel Branching]
+Node A -> multiple nodes at once (with Send).
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Looping]
+Node A -> (A again or continue).
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Hierarchical]
+Subgraphs within graphs (advanced).
+\end{tipbox}
+\end{frame}
+
+\section{Summary}
+\begin{frame}[t,shrink=3]{Summary: Conditional Routing \& Branching}
+\setlength{\itemsep}{1pt}
+\vspace{0.05cm}
+
+\begin{conceptbox}[Core Concepts]
+\setlength{\itemsep}{0.5pt}
+\begin{itemize}
+  \item Router functions: read state, return node name
+  \item add\_conditional\_edges: source, router, path map
+  \item Cycles: loops for agent reasoning
+  \item Fan-out/fan-in: branching and aggregation
+  \item Send API: dynamic routing
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{warningbox}[Critical]
+\textit{Always} have an exit condition for loops!
+\end{warningbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Pattern]
+Agent loop = LLM -> router → tool → loop back (or END)
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[t,shrink=5]{Self-Check Questions}
+\setlength{\itemsep}{0pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{enumerate}
+\setlength{\itemsep}{0.5pt}
+  \item What does a router function return?
+  \item How do conditional edges work (3 parts)?
+  \item What's the difference between fan-out and fan-in?
+  \item Why do loops need an exit condition?
+  \item When would you use tools\_condition?
+  \item What does Send API do?
+  \item How do you implement an agent loop?
+\end{enumerate}
+
+\vspace{0.05cm}
+
+\textbf{Quick Answers:} (1) String (node name). (2) Source, router fn, path map. (3) Fan-out: one->many; fan-in: many→one. (4) Without exit, infinite loop. (5) Route on LLM tool calls. (6) Dynamic fan-out. (7) LLM→router→tool→loop/END.
+}
+\end{frame}
+
+\begin{frame}[t]{Next Steps Beyond Section 03}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{tipbox}[You Now Know]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item State, nodes, edges (Section 01)
+  \item Building graphs (Section 02)
+  \item Conditional routing \& branching (Section 03)
+\end{itemize}
+\end{tipbox}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Future Topics]
+Persistence, tools, streaming, human-in-the-loop, deployment, evaluation.
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+You're ready to build production agentic workflows!
+\end{frame}
+
+\end{document}

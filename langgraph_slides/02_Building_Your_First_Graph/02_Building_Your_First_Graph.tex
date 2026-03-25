@@ -1,0 +1,581 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{blue!40!black},
+  keywordstyle=\color{lcblue}\bfseries,
+  stringstyle=\color{lcgreen},
+  commentstyle=\color{docgray}\itshape,
+  language=Python,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{LangGraph v1.0.x}
+\subtitle{Section 02: Building Your First Graph}
+\author{Agentic AI Foundations}
+\date{March 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section{Mental Model}
+\begin{frame}[t]{From Concept to Running Graph}
+\setlength{\itemsep}{1pt}
+\vspace{0.1cm}
+
+\begin{conceptbox}[The Five-Step Pattern]
+\setlength{\itemsep}{1pt}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+  \item \textbf{Define} state schema (TypedDict)
+  \item \textbf{Create} StateGraph instance
+  \item \textbf{Add} nodes (functions)
+  \item \textbf{Add} edges (control flow)
+  \item \textbf{Compile} and invoke
+\end{enumerate}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+This same five-step pattern scales from ``hello world'' to production agents.
+\end{frame}
+
+\section{Step-by-Step}
+\begin{frame}[fragile,t]{Step 1: Define State Schema}
+\vspace{0.1cm}
+
+\begin{codebox}[TypedDict]
+\begin{lstlisting}
+from typing_extensions import TypedDict
+
+class State(TypedDict):
+    user_input: str
+    response: str
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[State Design]
+Think about what data flows through your graph. Each field is a piece of state.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Step 2: Create StateGraph}
+\vspace{0.1cm}
+
+\begin{codebox}[Initialize]
+\begin{lstlisting}
+from langgraph.graph import StateGraph
+
+graph = StateGraph(State)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+That's it. The StateGraph holds your nodes and edges.
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Methods]
+\texttt{graph.add\_node()}, \texttt{graph.add\_edge()}, \texttt{graph.compile()}
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Step 3 \& 4: Add Nodes and Edges}
+\vspace{0.05cm}
+
+\begin{codebox}[Define a Node]
+\begin{lstlisting}
+def process_input(state: State) -> dict:
+    response = state["user_input"].upper()
+    return {"response": response}
+
+graph.add_node("process", process_input)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Connect with Edges]
+\begin{lstlisting}
+from langgraph.graph import START, END
+graph.add_edge(START, "process")
+graph.add_edge("process", END)
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\begin{frame}[fragile,t]{Step 5: Compile and Invoke}
+\vspace{0.1cm}
+
+\begin{codebox}[Compile]
+\begin{lstlisting}
+compiled_graph = graph.compile()
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Invoke]
+\begin{lstlisting}
+result = compiled_graph.invoke(
+    {"user_input": "hello"}
+)
+print(result["response"])  # HELLO
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+{\footnotesize \texttt{invoke()} runs the graph synchronously and returns final state.}
+\end{frame}
+
+\section{StateGraph Class}
+\begin{frame}[fragile,t]{StateGraph: Constructor \& Methods}
+\vspace{0.05cm}
+
+\begin{codebox}[Constructor]
+\begin{lstlisting}
+StateGraph(State)  # Takes your state schema
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tabular}{p{4.5cm}p{6.5cm}}
+\toprule
+\textbf{Method} & \textbf{Purpose} \\
+\midrule
+\texttt{add\_node(name, fn)} & Add a computation node \\
+\texttt{add\_edge(src, dst)} & Add a normal edge \\
+\texttt{add\_conditional\_edges()} & Add conditional routing \\
+\texttt{compile()} & Finalize and return runnable \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.15cm}
+
+{\footnotesize Always call \texttt{compile()} before \texttt{invoke()}.}
+\end{frame}
+
+\section{Adding Nodes}
+\begin{frame}[fragile,t]{Adding Nodes: graph.add\_node()}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Node Registration]
+\texttt{add\_node(name, function)} registers a named node.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Multiple Nodes]
+\begin{lstlisting}
+graph.add_node("node_a", func_a)
+graph.add_node("node_b", func_b)
+graph.add_node("node_c", func_c)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Names]
+Node names are strings. Use them in \texttt{add\_edge()} calls.
+\end{tipbox}
+\end{frame}
+
+\section{Adding Edges}
+\begin{frame}[fragile,t]{Adding Edges: graph.add\_edge()}
+\vspace{0.1cm}
+
+\begin{codebox}[Normal Edges]
+\begin{lstlisting}
+graph.add_edge(START, "node_a")
+graph.add_edge("node_a", "node_b")
+graph.add_edge("node_b", END)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Order Matters]
+Data flows from source to destination. Define nodes before adding edges!
+\end{tipbox}
+\end{frame}
+
+\section{Compilation}
+\begin{frame}[fragile,t]{Compiling: graph.compile()}
+\vspace{0.1cm}
+
+\begin{conceptbox}[What compile() does]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+  \item Validates graph structure (reachable, valid edges)
+  \item Returns a \textit{runnable} (has \texttt{invoke()}, \texttt{stream()})
+  \item Prepares execution engine
+\end{itemize}
+\end{conceptbox}
+
+\vspace{0.15cm}
+
+\begin{codebox}[Compile]
+\begin{lstlisting}
+compiled = graph.compile()
+# compiled is now a Runnable
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize Compile only once, invoke many times.}
+\end{frame}
+
+\section{Invoking}
+\begin{frame}[fragile,t]{Invoking: compiled.invoke()}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Execution]
+\texttt{invoke(initial\_state)} runs the graph from START to END.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Invoke and Return]
+\begin{lstlisting}
+result = compiled.invoke({
+    "user_input": "hello world"
+})
+print(result)  # Full final state
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Synchronous]
+\texttt{invoke()} blocks until completion. For async, use \texttt{ainvoke()}.
+\end{tipbox}
+\end{frame}
+
+\section{Complete Example: Chatbot}
+\begin{frame}[fragile,t,shrink=3]{Complete Example: Simple Chatbot}
+\vspace{0.05cm}
+
+\begin{codebox}[Full Chatbot]
+\begin{lstlisting}
+from typing_extensions import TypedDict, Annotated
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph import add_messages
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+def chatbot_node(state: State):
+    # Simulate LLM response
+    return {"messages": ["Bot: Hello!"]}
+
+graph = StateGraph(State)
+graph.add_node("chatbot", chatbot_node)
+graph.add_edge(START, "chatbot")
+graph.add_edge("chatbot", END)
+compiled = graph.compile()
+
+result = compiled.invoke({
+    "messages": ["User: Hi"]
+})
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\section{Example 2: Classification}
+\begin{frame}[fragile,t,shrink=4]{Example: Classification Pipeline}
+\vspace{0.05cm}
+
+\begin{codebox}[Classifier]
+\begin{lstlisting}
+class State(TypedDict):
+    text: str
+    category: str
+
+def classify(state: State) -> dict:
+    text = state["text"]
+    cat = "spam" if "buy now" in text else "ok"
+    return {"category": cat}
+
+graph = StateGraph(State)
+graph.add_node("classifier", classify)
+graph.add_edge(START, "classifier")
+graph.add_edge("classifier", END)
+compiled = graph.compile()
+
+result = compiled.invoke(
+    {"text": "Check this out"}
+)
+\end{lstlisting}
+\end{codebox}
+\end{frame}
+
+\section{Visualization}
+\begin{frame}[fragile,t]{Getting Graph Visualization}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Mermaid Diagram]
+View your graph structure as a flowchart.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Draw Mermaid]
+\begin{lstlisting}
+mermaid_str = compiled.get_graph().draw_mermaid()
+print(mermaid_str)
+# Paste into mermaid.live to visualize
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Output]
+ASCII flowchart showing all nodes and edges. Great for debugging!
+\end{tipbox}
+\end{frame}
+
+\section{Config}
+\begin{frame}[fragile,t]{Passing Config: RunnableConfig}
+\vspace{0.1cm}
+
+\begin{conceptbox}[Config dict]
+Control graph execution behavior (threading, tags, streaming).
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Example]
+\begin{lstlisting}
+from langgraph.types import RunnableConfig
+
+config = {"tags": ["production"]}
+result = compiled.invoke(
+    {"text": "test"},
+    config=config
+)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+{\footnotesize Common config keys: \texttt{tags}, \texttt{run\_name}, \texttt{recursion\_limit}.}
+\end{frame}
+
+\section{Schemas}
+\begin{frame}[fragile,t,shrink=3]{Input and Output Schemas}
+\vspace{0.1cm}
+
+\begin{tipbox}[Automatic]
+LangGraph infers input/output schema from your State TypedDict.
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Inspect Schemas]
+\begin{lstlisting}
+print(compiled.input_schema)
+print(compiled.output_schema)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{conceptbox}[Why It Matters]
+Used for validation, API documentation, and tool-calling in frameworks.
+\end{conceptbox}
+\end{frame}
+
+\section{Type Checking}
+\begin{frame}[fragile,t]{Type Checking and Validation}
+\vspace{0.1cm}
+
+\begin{conceptbox}[TypedDict Validation]
+Use \texttt{typing\_extensions} for runtime validation.
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{codebox}[Validation]
+\begin{lstlisting}
+# Invoke with wrong type
+result = compiled.invoke({
+    "text": 123  # Should be string
+})  # May error or coerce
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{warningbox}[Tip]
+Always define state fields with correct types. Type hints prevent bugs!
+\end{warningbox}
+\end{frame}
+
+\section{Anatomy of Graph}
+\begin{frame}[t]{Anatomy of a Compiled Graph}
+\vspace{0.1cm}
+
+\begin{tikzpicture}[node distance=1.5cm, scale=0.9, every node/.style={font=\scriptsize}]
+  \node[draw, fill=lcblue!30, rounded rectangle] (s) {START};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of s] (n1) {Node A};
+  \node[draw, fill=lcgreen!30, rounded rectangle, right=of n1] (n2) {Node B};
+  \node[draw, fill=lcred!30, rounded rectangle, right=of n2] (e) {END};
+
+  \path[->, thick] (s) -- (n1);
+  \path[->, thick] (n1) -- (n2);
+  \path[->, thick] (n2) -- (e);
+
+  \node[below=of s, font=\tiny] {Entry};
+  \node[below=of n1, font=\tiny] {Compute};
+  \node[below=of n2, font=\tiny] {Compute};
+  \node[below=of e, font=\tiny] {Exit};
+\end{tikzpicture}
+
+\vspace{0.15cm}
+
+Every compiled graph has this structure: START -> nodes → END.
+\end{frame}
+
+\section{Debug Tips}
+\begin{frame}[fragile,t]{Debug Tips: Printing State}
+\vspace{0.1cm}
+
+\begin{codebox}[Debug Node]
+\begin{lstlisting}
+def debug_node(state: State) -> dict:
+    print(f"State: {state}")
+    # Do work
+    return {"field": value}
+
+graph.add_node("debug", debug_node)
+\end{lstlisting}
+\end{codebox}
+
+\vspace{0.15cm}
+
+\begin{tipbox}[Using stream()]
+For better debugging, use \texttt{stream()} to see intermediate outputs.
+\end{tipbox}
+\end{frame}
+
+\section{Common Patterns}
+\begin{frame}[t]{Common Graph Patterns}
+\vspace{0.1cm}
+
+\begin{tipbox}[Linear Graph]
+START -> A → B → C → END. Sequential processing.
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Branching Graph]
+START -> A → (B or C or D) → END. Uses conditional edges.
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Looping Graph]
+A -> (A again or next). Cycles for agent loops.
+\end{tipbox}
+
+\vspace{0.1cm}
+
+{\footnotesize Section 03 covers branching and looping in detail.}
+\end{frame}
+
+\section{Summary}
+\begin{frame}[t,shrink=4]{Summary: Building Your First Graph}
+\setlength{\itemsep}{1pt}
+\vspace{0.05cm}
+
+\begin{conceptbox}[Five-Step Pattern]
+\setlength{\itemsep}{0.5pt}
+\begin{enumerate}
+\setlength{\itemsep}{0.5pt}
+  \item Define state (TypedDict)
+  \item Create StateGraph(State)
+  \item Add nodes with add\_node()
+  \item Add edges with add\_edge()
+  \item Compile and invoke()
+\end{enumerate}
+\end{conceptbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Key Methods]
+\texttt{add\_node}, \texttt{add\_edge}, \texttt{compile}, \texttt{invoke}
+\end{tipbox}
+
+\vspace{0.1cm}
+
+\begin{tipbox}[Debugging}
+Use mermaid diagram, print state, test with simple inputs first.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}[t,shrink=5]{Self-Check Questions}
+\setlength{\itemsep}{0pt}
+\vspace{0.05cm}
+
+{\footnotesize
+\begin{enumerate}
+\setlength{\itemsep}{0.5pt}
+  \item What are the five steps to build a LangGraph?
+  \item What does StateGraph constructor take?
+  \item How do you add a node?
+  \item When must you call compile()?
+  \item What does invoke() return?
+  \item How can you visualize your graph?
+  \item What's the difference between invoke() and stream()?
+\end{enumerate}
+
+\vspace{0.05cm}
+
+\textbf{Quick Answers:} (1) Define state, create graph, add nodes, add edges, compile/invoke. (2) State schema. (3) graph.add\_node(name, fn). (4) Before invoke(). (5) Final state dict. (6) get\_graph().draw\_mermaid(). (7) invoke blocks; stream returns events.
+}
+\end{frame}
+
+\end{document}

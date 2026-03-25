@@ -1,0 +1,397 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\insertframenumber/\inserttotalframenumber\hspace*{4pt}\vspace{2pt}%
+}
+\usepackage{lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\definecolor{lcgreen}{HTML}{2E7D32}
+\definecolor{lcblue}{HTML}{1565C0}
+\definecolor{lcorange}{HTML}{EF6C00}
+\definecolor{lcred}{HTML}{C62828}
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{docgray}{gray}{0.55}
+
+\newtcolorbox{conceptbox}[1][]{colback=yellow!20,colframe=yellow!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{warningbox}[1][]{colback=red!15,colframe=red!60!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{tipbox}[1][]{colback=green!10,colframe=green!50!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+\newtcolorbox{codebox}[1][]{colback=blue!10,colframe=blue!40!black,title=#1,fonttitle=\bfseries,top=2pt,bottom=2pt,left=4pt,right=4pt}
+
+\lstset{basicstyle=\ttfamily\tiny,language=Python}
+
+\newcommand{\docref}[1]{{\scriptsize\color{docgray}[Docs: #1]}}
+
+\title{Section 11: Multi-Agent Patterns}
+\subtitle{Multiple Specialized Agents Collaborating}
+\author{LangGraph v1.0.x}
+\date{March 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Mental Model: Multi-Agent Systems}
+\begin{conceptbox}[Core Idea]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Multiple specialized agents working together
+\item Divide and conquer complex tasks
+\item Agents handle different domains/skills
+\item Orchestrator coordinates collaboration
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Analogy]
+Like a team: researcher, writer, reviewer, each expert.
+\end{tipbox}
+\docref{Multi-Agent Patterns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Why Multi-Agent}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{warningbox}[Single Agent Problems]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Does everything poorly
+\item Overloaded context
+\item Slow token generation
+\item Hard to audit
+\end{itemize}
+\end{warningbox}
+\column{0.48\textwidth}
+\begin{tipbox}[Multi-Agent Benefits]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Specialists excel
+\item Focused context
+\item Parallel execution
+\item Clear responsibility
+\end{itemize}
+\end{tipbox}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Supervisor Pattern: Delegation}
+\begin{conceptbox}[Architecture]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Supervisor LLM decides which worker
+\item Workers execute specific tasks
+\item Supervisor aggregates results
+\item Hierarchical decision-making
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[Analogy]
+Manager delegates to team; collects output.
+\end{tipbox}
+\docref{Supervisor Pattern}
+\end{frame}
+
+\begin{frame}
+\frametitle{langgraph-supervisor: create\_supervisor()}
+\begin{tipbox}[Quick Setup]
+\texttt{supervisor = create\_supervisor(}\\
+\texttt{llm=model,}\\
+\texttt{agents=\{"research": research\_agent,}\\
+\texttt{"write": write\_agent\})}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[What It Does]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Auto-creates supervisor node
+\item Routes to best worker
+\item Handles tool calling
+\end{itemize}
+\end{tipbox}
+\docref{langgraph-supervisor}
+\end{frame}
+
+\begin{frame}
+\frametitle{Building Supervisor from Scratch}
+\begin{tipbox}[Supervisor Node]
+\texttt{def supervisor(state):}\\
+\texttt{choice = llm.invoke(messages)}\\
+\texttt{return \{"next": choice\}}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Routing]
+\texttt{add\_conditional\_edges("supervisor",}\\
+\texttt{lambda x: x["next"],}\\
+\texttt{\{"research": "research", "write": "write"\})}
+\end{tipbox}
+\docref{Conditional Edges}
+\end{frame}
+
+\begin{frame}
+\frametitle{Swarm Pattern: Agent Handoffs}
+\begin{conceptbox}[Key Idea]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Agents hand control to each other
+\item No central supervisor
+\item Peer-to-peer communication
+\item Self-organizing workflow
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Complex workflows, no clear hierarchy
+\item Agents need flexibility
+\item Natural conversation flow
+\end{itemize}
+\end{tipbox}
+\docref{Swarm Pattern}
+\end{frame}
+
+\begin{frame}
+\frametitle{langgraph-swarm: create\_swarm()}
+\begin{tipbox}[Quick Setup]
+\texttt{swarm = create\_swarm(}\\
+\texttt{agents=\{"research": research\_agent,}\\
+\texttt{"write": write\_agent\})}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[What It Does]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Agents select next agent
+\item No explicit supervisor
+\item Built-in handoff mechanics
+\end{itemize}
+\end{tipbox}
+\docref{langgraph-swarm}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agent Handoffs}
+\begin{tipbox}[Handoff Mechanism]
+\texttt{def agent\_a(state):}\\
+\texttt{if needs\_agent\_b:}\\
+\texttt{return \{"next\_agent": "agent\_b"\}}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Implementation]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Agent returns decision + context
+\item Routing based on \texttt{next\_agent}
+\item Seamless conversation transition
+\end{itemize}
+\end{tipbox}
+\docref{Agent Handoffs}
+\end{frame}
+
+\begin{frame}
+\frametitle{Hierarchical Pattern}
+\begin{conceptbox}[Structure]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Top supervisor coordinates teams
+\item Mid-level supervisors manage workers
+\item Workers execute tasks
+\item Multiple levels of delegation
+\end{itemize}
+\end{conceptbox}
+\vspace{0.1cm}
+\begin{tipbox}[When to Use]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Very complex systems
+\item Many specialized agents
+\item Clear organizational structure
+\end{itemize}
+\end{tipbox}
+\docref{Hierarchical Patterns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Architecture Comparison}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Pattern} & \textbf{Control} & \textbf{Agents} \\
+\midrule
+Supervisor & Tight & 3-5 \\
+Swarm & Loose & 5-10 \\
+Hierarchical & Very Tight & 10+ \\
+\toprule
+\end{tabular}
+\end{center}
+\vspace{0.1cm}
+\begin{tipbox}[Trade-off]
+Supervisor: simple, predictable. Swarm: flexible, complex. Hierarchical: scale, overhead.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Map-Reduce Pattern}
+\begin{tipbox}[Dispatch to Workers]
+\texttt{def map\_tasks(state):}\\
+\texttt{tasks = split\_work(state["input"])}\\
+\texttt{return [Send("worker", \{"task": t\})}\\
+\texttt{for t in tasks]}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Pattern Steps]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Map: split work across workers
+\item Workers execute in parallel
+\item Reduce: aggregate results
+\end{itemize}
+\end{tipbox}
+\docref{Send, Map-Reduce}
+\end{frame}
+
+\begin{frame}
+\frametitle{Send(): Dynamic Parallelism}
+\begin{tipbox}[Parallel Dispatch]
+\texttt{from langgraph.types import Send}\\
+\texttt{return [Send("worker\_1", \{"data": x\})}\\
+\texttt{for x in state["items"]]}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Benefits]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Fan-out to N workers
+\item Automatic synchronization
+\item Flexible dispatch counts
+\end{itemize}
+\end{tipbox}
+\docref{Send()}
+\end{frame}
+
+\begin{frame}
+\frametitle{Shared vs Isolated State}
+\begin{warningbox}[Shared State]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item All agents see same state
+\item Easy coordination
+\item Risk of conflicts
+\end{itemize}
+\end{warningbox}
+\vspace{0.1cm}
+\begin{tipbox}[Isolated State]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Each agent private state
+\item Explicit message passing
+\item Clearer data flow
+\end{itemize}
+\end{tipbox}
+\docref{State Management}
+\end{frame}
+
+\begin{frame}
+\frametitle{Communication Between Agents}
+\begin{tipbox}[Message Passing]
+\texttt{def agent\_a(state):}\\
+\texttt{response = llm.invoke(state["messages"])}\\
+\texttt{return \{"messages": messages + [response]\}}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Pattern]
+Shared message list; agents append responses.
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Decision Table}
+\begin{center}
+\footnotesize
+\begin{tabular}{llll}
+\toprule
+\textbf{Use Case} & \textbf{Pattern} & \textbf{Complexity} & \textbf{Speed} \\
+\midrule
+Few simple tasks & Supervisor & Low & Fast \\
+Flexible workflow & Swarm & Medium & Medium \\
+Large org structure & Hierarchical & High & Slow \\
+Parallel work & Map-Reduce & Medium & Fast \\
+\toprule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Real-World Example: Research Team}
+\begin{tipbox}[Supervisor Orchestrates]
+\texttt{supervisor = create\_supervisor(}\\
+\texttt{llm=gpt4, agents=\{...}\\
+\texttt{)}
+\end{tipbox}
+\vspace{0.1cm}
+\begin{tipbox}[Flow]
+Supervisor -> Research → Write → Review → Done
+\end{tipbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Common Pitfalls}
+\begin{warningbox}[Agent Loops]
+Agents hand off back and forth endlessly.\\
+\textbf{Fix:} Max iterations, clear termination.
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[Unclear Responsibilities]
+Agents overlap; confusion on roles.\\
+\textbf{Fix:} Document specializations; test thoroughly.
+\end{warningbox}
+\vspace{0.08cm}
+\begin{warningbox}[State Conflicts]
+Multiple agents write same field.\\
+\textbf{Fix:} Isolated state + explicit messaging.
+\end{warningbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Summary: Multi-Agent Cheat Sheet}
+\begin{conceptbox}[Key Patterns]
+\setlength{\itemsep}{1pt}
+\begin{itemize}
+\item Supervisor: central, 3-5 agents
+\item Swarm: peer agents, 5-10
+\item Hierarchical: multi-level, 10+
+\item Map-Reduce: parallel execution
+\item Shared message list communication
+\item Max iterations prevent loops
+\item Document roles explicitly
+\item Test routing thoroughly
+\end{itemize}
+\end{conceptbox}
+\end{frame}
+
+\begin{frame}
+\frametitle{Self-Check Questions}
+\begin{enumerate}
+\setlength{\itemsep}{2pt}
+\item Supervisor vs Swarm difference?
+\item How supervisor decides worker?
+\item What \texttt{create\_supervisor()} do?
+\item Agent handoffs in Swarm?
+\item When use Hierarchical?
+\item Dispatch multiple workers?
+\item What \texttt{Send()} do?
+\item Shared vs isolated state?
+\item Agent communication via messages?
+\item Name one pitfall and fix?
+\end{enumerate}
+\end{frame}
+
+\end{document}
